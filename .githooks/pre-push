@@ -1,0 +1,11 @@
+#!/bin/sh
+# main への直接 push を拒否する。変更は Pull Request で取り込む。
+# 詳しくは CONTRIBUTING.md を参照。
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "エラー: main への直接 push は禁止されています。" >&2
+    echo "ブランチを push し、gh pr create で Pull Request を作ってください。" >&2
+    exit 1
+  fi
+done
