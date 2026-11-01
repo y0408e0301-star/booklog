@@ -1,0 +1,22 @@
+#!/bin/sh
+# main への直接コミットと、ルールに合わない名前のブランチでのコミットを拒否する。
+# 詳しくは CONTRIBUTING.md を参照。
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+# rebase 中などブランチに乗っていないときは対象外
+[ -z "$branch" ] && exit 0
+
+if [ "$branch" = "main" ]; then
+  echo "エラー: main への直接コミットは禁止されています。" >&2
+  echo "Issue を立て、git switch -c <種類>/<Issue 番号>-<短い説明> でブランチを切ってください。" >&2
+  exit 1
+fi
+
+if ! echo "$branch" | grep -Eq '^(feat|fix|docs|refactor|test|chore)/[0-9]+-[a-z0-9-]+$'; then
+  echo "エラー: ブランチ名 '$branch' がルールに合いません。" >&2
+  echo "形式: <種類>/<Issue 番号>-<短い説明>（例: feat/12-add-card-api）" >&2
+  echo "種類: feat / fix / docs / refactor / test / chore" >&2
+  echo "名前の変更: git branch -m <新しい名前>" >&2
+  exit 1
+fi

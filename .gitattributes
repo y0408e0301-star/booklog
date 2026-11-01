@@ -1,0 +1,4 @@
+# 改行は全ファイル LF にそろえる（Windows でも CRLF にしない）
+* text=auto eol=lf
+# git フックは sh で動くため、とくに LF が必須
+.githooks/* text eol=lf
