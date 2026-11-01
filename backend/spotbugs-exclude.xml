@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SpotBugs（mvnw verify）で報告しないもの。除外するときは理由を書く -->
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
+
+	<!-- 「受け取った・返すオブジェクトを外から書き換えられる」という警告。
+		 Spring がコンストラクターで渡す Bean（サービス・リポジトリ）と、record の DTO の List が対象になり、
+		 Spring Boot のアプリでは誤検知になるので報告しない -->
+	<Match>
+		<Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+	</Match>
+
+</FindBugsFilter>

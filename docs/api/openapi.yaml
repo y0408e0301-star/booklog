@@ -1,0 +1,282 @@
+openapi: 3.1.0
+info:
+  description: |-
+    読書記録アプリ「BookLog」の API。機能ごとの決まりは機能定義書（docs/functions）を見る。
+
+    ## エラーの一覧
+
+    エラーのときは `{"code", "message", "field"}` を返す。message は画面にそのまま出せる文、field があればその入力欄の下に出す。
+
+    | code | HTTP ステータス | message |
+    | --- | --- | --- |
+    | USERNAME_INVALID | 400 | ユーザー ID は 3〜15 文字の半角英数字と「_」で入力してください。 |
+    | USERNAME_TAKEN | 409 | このユーザー ID は使われています。 |
+    | PASSWORD_INVALID | 400 | パスワードは英字と数字を含む 8〜64 文字の半角文字で入力してください。 |
+    | DISPLAY_NAME_REQUIRED | 400 | 表示名を入力してください。 |
+    | LOGIN_FAILED | 401 | ユーザー ID かパスワードが違います。 |
+    | LOGIN_LOCKED | 423 | ログインに続けて失敗したため、15 分間ログインできません。 |
+    | UNAUTHENTICATED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
+    | TOKEN_EXPIRED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
+    | REFRESH_FAILED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
+    | BAD_REQUEST | 400 | 入力が正しくありません。 |
+    | FORBIDDEN | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
+    | NOT_FOUND | 404 | 見つかりません。 |
+    | INTERNAL_ERROR | 500 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
+  title: BookLog API
+  version: "1"
+servers:
+- url: /
+security:
+- accessToken: []
+paths:
+  /api/auth/login:
+    post:
+      description: access_token・refresh_token の Cookie を返す。続けて失敗すると 15 分ロックする（423）
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      security: []
+      summary: ログイン
+      tags:
+      - FN-01 ユーザー登録・ログイン
+  /api/auth/logout:
+    post:
+      description: refresh_token を無効にし、Cookie を消す
+      operationId: logout
+      parameters:
+      - in: cookie
+        name: refresh_token
+        required: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: ログアウトした
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: ログアウト
+      tags:
+      - FN-01 ユーザー登録・ログイン
+  /api/auth/me:
+    get:
+      operationId: me
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: ログインしている自分
+      tags:
+      - FN-01 ユーザー登録・ログイン
+  /api/auth/refresh:
+    post:
+      description: refresh_token の Cookie で、access_token・refresh_token を取り直す
+      operationId: refresh
+      parameters:
+      - in: cookie
+        name: refresh_token
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+          description: 取り直した
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      security: []
+      summary: JWT の取り直し
+      tags:
+      - FN-01 ユーザー登録・ログイン
+  /api/auth/signup:
+    post:
+      description: 登録したらそのままログインし、access_token・refresh_token の Cookie を返す
+      operationId: signup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+          description: 登録した
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      security: []
+      summary: ユーザー登録
+      tags:
+      - FN-01 ユーザー登録・ログイン
+  /api/auth/username-availability:
+    get:
+      operationId: usernameAvailability
+      parameters:
+      - in: query
+        name: username
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsernameAvailability"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      security: []
+      summary: ユーザー ID が使えるか
+      tags:
+      - FN-01 ユーザー登録・ログイン
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        field:
+          type:
+          - string
+          - "null"
+        message:
+          type: string
+      required:
+      - code
+      - field
+      - message
+    LoginRequest:
+      type: object
+      properties:
+        password:
+          type: string
+        username:
+          type: string
+      required:
+      - password
+      - username
+    Me:
+      type: object
+      properties:
+        displayName:
+          type: string
+        username:
+          type: string
+      required:
+      - displayName
+      - username
+    SignupRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          description: 前後の空白を除いて 1〜30 文字（A-4）
+        password:
+          type: string
+          description: 8〜64 文字の半角文字で、英字と数字を 1 文字以上ずつ含む（A-3）
+        username:
+          type: string
+          description: 前後の空白を除いて 3〜15 文字の半角英数字と「_」（A-2）
+      required:
+      - displayName
+      - password
+      - username
+    UsernameAvailability:
+      type: object
+      properties:
+        available:
+          type: boolean
+      required:
+      - available
+  securitySchemes:
+    accessToken:
+      description: ログイン（POST /api/auth/login）で受け取る JWT の Cookie（機能定義書 3.2）。GET 以外では、Cookie
+        の XSRF-TOKEN の値を X-XSRF-TOKEN ヘッダーで送り返す（CSRF 対策）
+      in: cookie
+      name: access_token
+      type: apiKey

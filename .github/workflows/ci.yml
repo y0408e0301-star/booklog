@@ -1,0 +1,29 @@
+# コードチェックとテストを、Pull Request と main への push ごとに GitHub 上で実行する。
+# 手元で同じことをするコマンドは README「テストとコードチェック」
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: API サーバー（書式・静的解析・テスト）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    # テスト用の PostgreSQL は Testcontainers が Docker で起動する（ubuntu-latest には Docker が入っている）。
+    # API の仕様書（docs/api/openapi.yaml）がコードと違えば、OpenApiExportTests が失敗する
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - run: ./mvnw -B verify

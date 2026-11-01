@@ -1,0 +1,16 @@
+# 開発用の PostgreSQL。リポジトリのルートで `docker compose up -d` を実行して起動する
+# 写真は S3 の開発用のバケットに置くので、ここでは起動しない（インフラ設計書 6 章）
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: booklog
+      POSTGRES_USER: booklog
+      POSTGRES_PASSWORD: booklog
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
