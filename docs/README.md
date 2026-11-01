@@ -25,8 +25,8 @@ docs/
 ├── design/                            … 基本設計書（どう作るか）
 │   ├── basic-design.md                … 本体（概要と各文書へのリンク）
 │   ├── screen-design.md               … 画面設計書
-│   ├── data-design.md                 … データ設計書（ER 図）※これから作る
-│   └── infra-design.md                … インフラ設計書（AWS の構成図）※これから作る
+│   ├── data-design.md                 … データ設計書（ER 図）
+│   └── infra-design.md                … インフラ設計書（AWS の構成図）
 ├── tech-stack.md                      … 技術スタック定義書
 └── development-plan.md                … 開発計画書（作る順番と進み具合）※これから作る
 ```
@@ -40,8 +40,8 @@ docs/
 | [FN-01〜FN-11 の機能定義書](functions/function-definition.md#12-機能定義書の構成) | BL-FD-01〜11 | 機能ごとの機能要件、処理の流れ、入力の確認、業務ルール、API（案）、使うデータ、権限、エラー、テストの観点 | 〃 |
 | [基本設計書](design/basic-design.md) | BL-BD | 設計全体の概要、表記のルール、これから行う設計 | 基本設計書の本体で、詳細文書とまとめて行う |
 | [画面設計書](design/screen-design.md) | BL-BD-SCR | 共通仕様（色・文字・ボタン・メッセージ・共通の部品）、画面ごとのレイアウト・表示項目・操作 | 〃 |
-| データ設計書（これから作る） | BL-BD-DATA | ER 図、テーブル定義、データのルール、CRUD 表 | 〃 |
-| インフラ設計書（これから作る） | BL-BD-INFRA | AWS の構成図、ネットワーク、外への通信、費用の目安 | 〃 |
+| [データ設計書](design/data-design.md) | BL-BD-DATA | ER 図、テーブル定義、データのルール、CRUD 表 | 〃 |
+| [インフラ設計書](design/infra-design.md) | BL-BD-INFRA | AWS の構成図、ネットワーク、外への通信、費用の目安 | 〃 |
 | [技術スタック定義書](tech-stack.md) | BL-TECH | 使う言語・フレームワーク・サービス・開発ツールと選んだ理由 | 本書で行う |
 | 開発計画書（これから作る） | BL-PLAN | 作る順番（段階と Pull Request の単位）、段階ごとの完了条件、どこまでできたか | 本書で行う |
 
@@ -52,7 +52,7 @@ docs/
 1. [要件定義書](requirements/requirements.md)：全体像と機能一覧（8 章）をつかむ
 2. 必要に応じて、要件定義書の詳細文書（[画面一覧](requirements/screens.md)・[データ要件定義書](requirements/data-requirements.md)）
 3. [機能定義書](functions/function-definition.md)：共通の決まりを読み、作る機能の文書（FN-01〜FN-11）を読む
-4. [基本設計書](design/basic-design.md) → [画面設計書](design/screen-design.md)
+4. [基本設計書](design/basic-design.md) → [画面設計書](design/screen-design.md)・[データ設計書](design/data-design.md)・[インフラ設計書](design/infra-design.md)
 
 1 つの機能を作るときは、その機能の機能定義書と、そこから参照している章を読めばよい。
 
@@ -71,6 +71,9 @@ docs/
 | A・B・RV・PH・H・C・F・ST・T・BK・PF | 機能要件（登録・ログイン・退会、書籍検索、レビュー、写真、参考になった、コメント、フォロー、読書ステータス、タイムライン、本のページ、プロフィール） | 各機能定義書 2 章（A は FN-01、B は FN-02 … PF は FN-11） |
 | M-1〜 | メッセージ | 機能定義書 4 章 |
 | TC-01-1〜 | テストの観点（機能の番号と連番） | 機能定義書 FN-01〜FN-11 の 10 章 |
+| BR-1〜 | データのルール | データ設計書 7 章 |
+| SG-1〜 | セキュリティグループ（通信の許可） | インフラ設計書 4 章 |
+| Q-1〜 | 設計中に見つかった要件の不足 | 基本設計書 3 章 |
 
 ## 文書の書き方のルール
 

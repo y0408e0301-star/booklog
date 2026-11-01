@@ -3,9 +3,9 @@
 | 項目 | 内容 |
 | --- | --- |
 | 文書番号 | BL-TECH |
-| 版数 | 0.1 |
+| 版数 | 0.2 |
 | 作成日 | 2026-11-01 |
-| 最終更新日 | 2026-11-01 |
+| 最終更新日 | 2026-11-02 |
 | 作成者 | （氏名） |
 | 元にした文書 | [要件定義書](requirements/requirements.md) 版数 0.3、[機能定義書](functions/function-definition.md) 版数 0.1 |
 | 状態 | 承認待ち |
@@ -15,6 +15,7 @@
 | 版数 | 日付 | 内容 | 作成者 |
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-01 | 初版。Raise timeline と同じ技術・同じバージョンを基本にし、Google Books API を使うためのもの（RestClient・jsoup・テストでの偽物）を足した | （氏名） |
+| 0.2 | 2026-11-02 | インフラ設計書 0.1 で、公開先から Google Books API へは NAT ゲートウェイを置かずにパブリックサブネットのタスクから出ると決めたので、3.5・4 章を直した。1 章と 5.3 にインフラ設計書・データ設計書へのリンクを足した | （氏名） |
 
 ## 承認
 
@@ -34,7 +35,7 @@
 | P-1 | データを保存する RDB（PostgreSQL）のバージョンと動かす場所を決める |
 | P-2 | 写真を保存するクラウドストレージ（S3）と、自動のテストで使う代わり（MinIO）を決める |
 | P-3 | 本の情報を取る Google Books API の呼び方と、テストでの代わりを決める |
-| P-5 | 公開するときの AWS のサービスを決める。構成はインフラ設計書（これから作る）に書く |
+| P-5 | 公開するときの AWS のサービスを決める。構成は[インフラ設計書](design/infra-design.md)に書く |
 
 ### 1.1 基本の方針
 
@@ -135,7 +136,7 @@ API キーは、開発中は環境変数で、公開先は Parameter Store で�
 | 入口・HTTPS | Amazon CloudFront、CloudFront Functions | PriceClass_200、cloudfront-js-2.0 | ○ | HTTPS の終端。画面を S3 から配る |
 | ロードバランサー | Application Load Balancer | HTTP 80 | ○ | 止めている間は消す（P-6） |
 | 写真・画面の保存先 | Amazon S3 | | ○ | P-2 |
-| 外への通信 | NAT ゲートウェイを使わない構成（インフラ設計書で決める） | | 新 | API のタスクから Google Books API（インターネット）を呼ぶ必要がある。Raise timeline は AWS の中のサービスだけを呼んでいた。費用の高い NAT ゲートウェイを置かずに済む方法をインフラ設計書で決める |
+| 外への通信 | インターネットゲートウェイ（NAT ゲートウェイは使わない） | | 新 | API のタスクから Google Books API（インターネット）を呼ぶ必要がある。Raise timeline は AWS の中のサービスだけを呼んでいた。タスクはもともとパブリックサブネットに置いてパブリック IP を付けているので、費用の高い NAT ゲートウェイを置かずにインターネットゲートウェイから出られる（インフラ設計書 方針 6・7） |
 | 秘密の値 | AWS Systems Manager Parameter Store | | ○ | N-18。Google Books API の API キーもここに置く |
 | ログ・監視 | Amazon CloudWatch | | ○ | API のログ（JSON）、ALB・RDS のアラーム |
 | 費用の通知 | AWS Budgets | | ○ | R-1 |
@@ -177,7 +178,7 @@ API キーは、開発中は環境変数で、公開先は Parameter Store で�
 | 外部の API | なし | Google Books API（RestClient で呼ぶ） | 本の情報を手で入れずに取るため（FN-02） |
 | HTML の処理 | なし | jsoup | 紹介文の HTML のタグを取り除くため |
 | 外部の API のテスト | なし | MockRestServiceServer、E2E では Node.js の偽物のサーバー | 自動のテストで本物を呼ばないため（N-28） |
-| 外への通信 | AWS の中のサービスだけ | インターネット（Google Books API）にも出る | 公開先での出口の作り方をインフラ設計書で決める |
+| 外への通信 | AWS の中のサービスだけ | インターネット（Google Books API）にも出る | タスクのパブリック IP からインターネットゲートウェイを通って出る（インフラ設計書 方針 7） |
 | 部分一致の検索 | pg_trgm（ユーザー検索） | 使わない | 本アプリにユーザー検索はなく、本の検索は Google Books API で行うため |
 | アイコン画像 | S3 の icons/ | なし | 要件定義書 2.2 |
 | 画面の数 | 11 画面 | 13 画面 | G-1〜G-13 |
@@ -213,7 +214,7 @@ Raise timeline と同じものを使うことを前提にしたため、比較�
 | API のメモリ（Caffeine など） | — | △ | 速いが、タスクを止める・作り直すと回数が 0 に戻り、1 日の上限を超えるおそれがある |
 | Amazon ElastiCache（Redis） | — | ○ | 数十人の利用には大きすぎ、費用もかかる |
 
-表の形・古い結果の消し方は、データ設計書で決める。
+表の形・古い結果の消し方は、[データ設計書](design/data-design.md)（4.11・4.12、BR-12・BR-13）のとおり。
 
 ### 5.4 E2E での Google Books API の偽物
 
