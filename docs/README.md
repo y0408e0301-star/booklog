@@ -22,7 +22,11 @@ docs/
 │   ├── fn09-timeline.md               … FN-09 タイムライン
 │   ├── fn10-book-page.md              … FN-10 本のページ
 │   └── fn11-profile.md                … FN-11 プロフィール
-├── design/                            … 基本設計書（画面・データ・インフラの設計）※これから作る
+├── design/                            … 基本設計書（どう作るか）
+│   ├── basic-design.md                … 本体（概要と各文書へのリンク）
+│   ├── screen-design.md               … 画面設計書
+│   ├── data-design.md                 … データ設計書（ER 図）※これから作る
+│   └── infra-design.md                … インフラ設計書（AWS の構成図）※これから作る
 ├── tech-stack.md                      … 技術スタック定義書
 └── development-plan.md                … 開発計画書（作る順番と進み具合）※これから作る
 ```
@@ -34,7 +38,10 @@ docs/
 | [データ要件定義書](requirements/data-requirements.md) | BL-REQ-DATA | 扱うデータの項目、上限、保存する個人情報 | 〃 |
 | [機能定義書](functions/function-definition.md) | BL-FD | 機能ごとの文書の章立て、画面と API の共通の決まり、メッセージ一覧 | 機能定義書の本体で、機能ごとの文書とまとめて行う |
 | [FN-01〜FN-11 の機能定義書](functions/function-definition.md#12-機能定義書の構成) | BL-FD-01〜11 | 機能ごとの機能要件、処理の流れ、入力の確認、業務ルール、API（案）、使うデータ、権限、エラー、テストの観点 | 〃 |
-| 基本設計書（これから作る） | BL-BD | 画面設計書・データ設計書・インフラ設計書 | 基本設計書の本体で、詳細文書とまとめて行う |
+| [基本設計書](design/basic-design.md) | BL-BD | 設計全体の概要、表記のルール、これから行う設計 | 基本設計書の本体で、詳細文書とまとめて行う |
+| [画面設計書](design/screen-design.md) | BL-BD-SCR | 共通仕様（色・文字・ボタン・メッセージ・共通の部品）、画面ごとのレイアウト・表示項目・操作 | 〃 |
+| データ設計書（これから作る） | BL-BD-DATA | ER 図、テーブル定義、データのルール、CRUD 表 | 〃 |
+| インフラ設計書（これから作る） | BL-BD-INFRA | AWS の構成図、ネットワーク、外への通信、費用の目安 | 〃 |
 | [技術スタック定義書](tech-stack.md) | BL-TECH | 使う言語・フレームワーク・サービス・開発ツールと選んだ理由 | 本書で行う |
 | 開発計画書（これから作る） | BL-PLAN | 作る順番（段階と Pull Request の単位）、段階ごとの完了条件、どこまでできたか | 本書で行う |
 
@@ -45,6 +52,7 @@ docs/
 1. [要件定義書](requirements/requirements.md)：全体像と機能一覧（8 章）をつかむ
 2. 必要に応じて、要件定義書の詳細文書（[画面一覧](requirements/screens.md)・[データ要件定義書](requirements/data-requirements.md)）
 3. [機能定義書](functions/function-definition.md)：共通の決まりを読み、作る機能の文書（FN-01〜FN-11）を読む
+4. [基本設計書](design/basic-design.md) → [画面設計書](design/screen-design.md)
 
 1 つの機能を作るときは、その機能の機能定義書と、そこから参照している章を読めばよい。
 
