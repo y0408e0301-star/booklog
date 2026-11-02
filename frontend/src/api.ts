@@ -1,4 +1,4 @@
-import type { components } from './api-schema'
+import type { components, operations } from './api-schema'
 import { M } from './messages'
 
 // API が返す形・受け取る形は、API の仕様書（docs/api/openapi.yaml）から作った api-schema.d.ts の型を使う。
@@ -223,6 +223,17 @@ export type ReviewPage = Schemas['ReviewPage']
 export function fetchBookReviews(bookId: number, cursor: string | null = null): Promise<ReviewPage> {
   const query = cursor === null ? '' : `?${new URLSearchParams({ cursor })}`
   return requestJson<ReviewPage>('GET', `/api/books/${bookId}/reviews${query}`)
+}
+
+// ---------------------------------------------------------------- FN-09 タイムライン
+
+export type Tab = NonNullable<NonNullable<operations['readTimeline']['parameters']['query']>['tab']>
+
+// 「フォロー中」は自分とフォローしている人、「すべて」は全員のレビューを新しい順に 20 件ずつ（T-1・T-2）
+export function fetchTimeline(tab: Tab, cursor: string | null = null): Promise<ReviewPage> {
+  const query = new URLSearchParams({ tab })
+  if (cursor !== null) query.set('cursor', cursor)
+  return requestJson<ReviewPage>('GET', `/api/timeline?${query}`)
 }
 
 // ---------------------------------------------------------------- 画面の URL（画面一覧 1 章）

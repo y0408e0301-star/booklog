@@ -3,12 +3,16 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import App from './App'
+import { M } from './messages'
 import { json, mockFetch } from './test/fetchMock'
 
 const me = { username: 'taro_y', displayName: 'たろう' }
 
-// 仮の G-3 に出す文
-const G3 = 'まだレビューがありません。本を探して、最初のレビューを書いてみましょう。'
+// G-3（フォロー中のタブが空）に出す文
+const G3 = M[25]
+
+// G-3 を開くと「フォロー中」のタブを読む
+const timeline = { 'GET /api/timeline?tab=following': () => json(200, { items: [], nextCursor: null }) }
 
 const notLoggedIn = {
   'GET /api/auth/me': () => json(401, { code: 'UNAUTHENTICATED', message: '…' }),
@@ -21,7 +25,7 @@ function renderAt(path: string) {
 
 describe('ログイン（G-1）', () => {
   it('ログインしていなければ G-1 を出し、ログインすると G-3 に移る', async () => {
-    mockFetch({ ...notLoggedIn, 'POST /api/auth/login': () => json(200, me) })
+    mockFetch({ ...notLoggedIn, 'POST /api/auth/login': () => json(200, me), ...timeline })
     renderAt('/')
     const button = await screen.findByRole('button', { name: 'ログイン' })
     // どちらかが空のときは押せない
@@ -47,13 +51,13 @@ describe('ログイン（G-1）', () => {
   })
 
   it('ログインしていれば G-1 を開いても G-3 に移る', async () => {
-    mockFetch({ 'GET /api/auth/me': () => json(200, me) })
+    mockFetch({ 'GET /api/auth/me': () => json(200, me), ...timeline })
     renderAt('/login')
     expect(await screen.findByText(G3)).toBeInTheDocument()
   })
 
   it('ログアウトすると G-1 に戻る', async () => {
-    const fetch = mockFetch({ 'GET /api/auth/me': () => json(200, me), 'POST /api/auth/logout': () => json(204) })
+    const fetch = mockFetch({ 'GET /api/auth/me': () => json(200, me), 'POST /api/auth/logout': () => json(204), ...timeline })
     renderAt('/')
     await userEvent.click(await screen.findByRole('button', { name: 'ログアウト' }))
     expect(await screen.findByRole('button', { name: 'ログイン' })).toBeInTheDocument()
@@ -101,6 +105,7 @@ describe('ユーザー登録（G-2）', () => {
       ...notLoggedIn,
       'GET /api/auth/username-availability?username=hanako': () => json(200, { available: true }),
       'POST /api/auth/signup': () => json(201, { username: 'hanako', displayName: 'はなこ' }),
+      ...timeline,
     })
     renderAt('/signup')
     await userEvent.type(await screen.findByLabelText('ユーザー ID'), ' hanako ')

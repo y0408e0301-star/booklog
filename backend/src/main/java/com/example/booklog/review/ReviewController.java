@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-// レビューの API（機能定義書 FN-03 6 章）と、本のページのレビューの一覧（FN-10 6 章）。
+// レビューの API（機能定義書 FN-03 6 章）と、レビューの一覧（本のページ FN-10 6 章、タイムライン FN-09 6 章）。
 // 写真（FN-04。開発計画書 1-6）と一緒に送れるよう、投稿と編集は multipart で受け取る。
 // ファイルの項目がない multipart の項目を springdoc はクエリとして書くので、仕様書には ReviewForm を本文として書き、
 // 項目そのものは仕様書から隠す（写真の項目を足したら見直す）
@@ -90,6 +90,18 @@ class ReviewController {
 			@Schema(requiredMode = Schema.RequiredMode.REQUIRED,
 					description = "感想。改行を LF にそろえ、前後の空白を除いて 1〜2,000 文字（RV-4）") @Nullable String body,
 			@Schema(description = "ネタバレあり。省いたら false（RV-11）") @Nullable Boolean spoiler) {
+	}
+
+	@Tag(name = "FN-09 タイムライン")
+	@Operation(operationId = "readTimeline", summary = "タイムライン",
+			description = "following は自分とフォローしている人、all は全員のレビュー。新しい順に 20 件ずつ")
+	@GetMapping("/api/timeline")
+	ReviewService.ReviewPage timeline(@AuthenticationPrincipal Jwt jwt,
+			@Parameter(description = "following か all（T-1）",
+					schema = @Schema(allowableValues = { "following", "all" })) @RequestParam(
+							required = false) @Nullable String tab,
+			@Parameter(description = "前回の nextCursor。最初は省く") @RequestParam(required = false) @Nullable String cursor) {
+		return this.reviewService.timeline(userId(jwt), tab, cursor);
 	}
 
 	// JWT の sub にはユーザーの ID（users.id）が入っている（TokenService）

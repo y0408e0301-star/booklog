@@ -23,6 +23,20 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 			""")
 	List<Review> findByBookBefore(@Param("bookId") long bookId, @Param("cursor") long cursor, Limit limit);
 
+	// タイムラインの「すべて」：cursor より古いレビューを新しい順に（T-1・T-2、FN-09 5 章の 2）。主キーの索引を使う
+	@Query("select r from Review r join fetch r.author join fetch r.book where r.id < :cursor order by r.id desc")
+	List<Review> findAllBefore(@Param("cursor") long cursor, Limit limit);
+
+	// タイムラインの「フォロー中」：自分とフォローしている人のレビューを、cursor より古いものから新しい順に
+	// （FN-09 5 章の 1・2、データ設計書 8.1）
+	@Query("""
+			select r from Review r join fetch r.author a join fetch r.book
+			where r.id < :cursor
+			  and (a.id = :me or a.id in (select f.followeeId from Follow f where f.followerId = :me))
+			order by r.id desc
+			""")
+	List<Review> findFollowingBefore(@Param("me") long me, @Param("cursor") long cursor, Limit limit);
+
 	// 同じ本のレビューをもう書いているか（RV-1、BR-2）
 	@Query("select count(r) > 0 from Review r where r.author.id = :userId and r.book.id = :bookId")
 	boolean existsByAuthorAndBook(@Param("userId") long userId, @Param("bookId") long bookId);

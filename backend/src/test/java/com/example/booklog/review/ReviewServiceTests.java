@@ -199,6 +199,24 @@ class ReviewServiceTests {
 		assertApiError(() -> this.service.listByBook(1, 999, null), ErrorCode.BOOK_NOT_FOUND);
 	}
 
+	// FN-09 T-1
+	@Test
+	void タイムラインはタブでフォロー中とすべてを分ける() {
+		when(this.reviews.findFollowingBefore(1, Long.MAX_VALUE, Limit.of(21)))
+			.thenReturn(List.of(review(3, this.taro)));
+		when(this.reviews.findAllBefore(80, Limit.of(21))).thenReturn(List.of(review(79, this.hanako)));
+
+		assertThat(this.service.timeline(1, "following", null).items()).extracting(ReviewView::id).containsExactly(3L);
+		assertThat(this.service.timeline(1, "all", "80").items()).extracting(ReviewView::id).containsExactly(79L);
+	}
+
+	@Test
+	void タブがfollowingかall以外ならBAD_REQUEST() {
+		assertApiError(() -> this.service.timeline(1, null, null), ErrorCode.BAD_REQUEST);
+		assertApiError(() -> this.service.timeline(1, "mine", null), ErrorCode.BAD_REQUEST);
+		assertApiError(() -> this.service.timeline(1, "all", "x"), ErrorCode.BAD_REQUEST);
+	}
+
 	private Review review(long id, User author) {
 		return TestEntities.withId(new Review(author, this.book, INPUT, TestEntities.NOW.minusSeconds(60)), id);
 	}
