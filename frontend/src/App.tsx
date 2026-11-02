@@ -3,12 +3,14 @@ import { AuthProvider } from './auth/AuthProvider'
 import { GuestOnly, RequireAuth } from './auth/guards'
 import Layout from './components/Layout'
 import { ToastProvider } from './components/ToastProvider'
+import BookPage from './pages/BookPage'
+import BookSearchPage from './pages/BookSearchPage'
 import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 
 // 画面と URL（画面一覧 1 章）。BrowserRouter（テストでは MemoryRouter）の中で使う。
-// G-4〜G-10 は、それぞれの機能を作るときに足す（開発計画書 3.1）
+// G-6〜G-10 は、それぞれの機能を作るときに足す（開発計画書 3.1）
 export default function App() {
   return (
     <AuthProvider>
@@ -22,6 +24,8 @@ export default function App() {
             {/* G-3〜G-10 はヘッダーつき */}
             <Route element={<Layout />}>
               <Route path="/" element={<HomePage />} />
+              <Route path="/books/search" element={<BookSearchPage />} />
+              <Route path="/books/:id" element={<BookPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

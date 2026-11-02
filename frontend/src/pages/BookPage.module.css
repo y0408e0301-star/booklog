@@ -1,0 +1,21 @@
+/* G-5 本のページ（画面設計書 7 章） */
+.book { padding: 16px; border-bottom: 1px solid var(--line); }
+.top { display: flex; gap: 16px; align-items: flex-start; }
+.info { min-width: 0; }
+.info p { margin: 4px 0 0; overflow-wrap: anywhere; }
+/* 2.2 G-5 の書名は 18px・太字 */
+.title { margin: 0; font-size: 18px; overflow-wrap: anywhere; }
+.sub { color: var(--sub); }
+
+/* 紹介文：改行をそのまま出し、5 行まで */
+.description { margin-top: 16px; }
+.description p { margin: 0; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.clamped { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; line-clamp: 5; overflow: hidden; }
+.more { margin-top: 4px; padding: 0; border: none; background: none; color: var(--primary); cursor: pointer; font-size: 14px; }
+.more:hover { text-decoration: underline; }
+
+/* 600px 未満では、表紙を上の中央に置き、その下に書名などを並べる */
+@media (max-width: 599px) {
+  .top { flex-direction: column; align-items: center; }
+  .info { align-self: stretch; }
+}

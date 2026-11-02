@@ -32,6 +32,7 @@
 		<spotbugs-maven-plugin.version>4.10.4.1</spotbugs-maven-plugin.version>
 		<!-- API の仕様書（OpenAPI）を作る springdoc-openapi。3.x が Spring Boot 4 に対応している -->
 		<springdoc.version>3.1.1</springdoc.version>
+		<jsoup.version>1.23.2</jsoup.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -64,6 +65,17 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- Google Books API を時間の上限（5 秒）付きで呼ぶ（技術スタック定義書 3.6） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient</artifactId>
+		</dependency>
+		<!-- Google Books API の紹介文から HTML のタグを取り除く（FN-02 5 章の 6） -->
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>${jsoup.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>

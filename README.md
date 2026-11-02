@@ -7,7 +7,7 @@
 - 作る順番と進み具合：[開発計画書](docs/development-plan.md)
 - 開発ルール：[CONTRIBUTING.md](CONTRIBUTING.md)
 
-いまは API サーバーと画面の土台、ユーザー登録・ログイン（開発計画書 1-1・1-2）まで作っています。公開の手順は、作ったときに足します。
+いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み（開発計画書 1-1〜1-3）まで作っています。公開の手順は、作ったときに足します。
 
 ## 起動方法
 
@@ -34,6 +34,23 @@ cd frontend
 npm ci
 ```
 
+### Google Books API の API キー
+
+書籍検索（FN-02）は、API サーバーから Google Books API を呼びます。開発用の API キーを環境変数 `GOOGLE_BOOKS_API_KEY` で渡してから API サーバーを起動します。キーは画面には渡さず、リポジトリにも置きません（N-18）。
+
+1. [Google Cloud のコンソール](https://console.cloud.google.com/) でプロジェクトを作り（既にあればそれを使う）、「API とサービス」→「ライブラリ」で **Books API** を有効にする
+2. 「API とサービス」→「認証情報」→「認証情報を作成」→「API キー」でキーを作る
+3. 作ったキーの「API の制限」で「キーを制限」を選び、**Books API だけ**にする（漏れたときに、ほかの API に使われないようにする。要件定義書 R-8）
+4. API サーバーを起動するターミナルで、キーを環境変数に入れる（PowerShell の例。ターミナルを閉じると消える）
+
+   ```
+   $env:GOOGLE_BOOKS_API_KEY = "作ったキー"
+   ```
+
+- キーを入れずに起動すると、key= を付けずに呼びます。その場合は Google の共有の枠になり、その日の上限で 429 が返ることが多く、画面には M-14（本の検索がいまできません）が出ます
+- 呼び出しは 1 日 1,000 回までに数えています（google_books_usage の表。日本時間の 0 時に 0 に戻る）。同じ文字・同じページの検索は 24 時間使い回すので、Google Books API は呼びません
+- 自動のテスト（`mvnw verify`・`npm test`）は Google Books API を呼ばないので、キーは要りません
+
 ### 起動する
 
 ターミナルを使い、リポジトリのフォルダから次を順に実行します。
@@ -49,7 +66,7 @@ npm ci
 - API サーバーは http://localhost:8080/actuator/health で `{"status":"UP"}` が返れば起動済みです
 - API の仕様書は http://localhost:8080/swagger-ui.html （Swagger UI）で見られます（下の「API の仕様書」）
 - ポートは上の表のものだけを使います（[CLAUDE.md](CLAUDE.md) の「サーバーのポート」）。使われていたら、そのポートを使っているプロセスを止めてから起動し直します（別のポートでは起動しません）。ほかのアプリの PostgreSQL のコンテナが 5432 を使っていたら、`docker stop <コンテナ名>` で止めてから起動します
-- 開発では、データベースの接続先と JWT の秘密の値は `backend/src/main/resources/application.properties` の既定値（開発用）を使うので、設定は要りません。公開環境では環境変数（`DB_URL`・`DB_USERNAME`・`DB_PASSWORD`・`JWT_SECRET`・`COOKIE_SECURE=true`）で渡します
+- 開発では、データベースの接続先と JWT の秘密の値は `backend/src/main/resources/application.properties` の既定値（開発用）を使うので、設定は要りません（Google Books API の API キーだけは上のとおり渡します）。公開環境では環境変数（`DB_URL`・`DB_USERNAME`・`DB_PASSWORD`・`JWT_SECRET`・`COOKIE_SECURE=true`・`GOOGLE_BOOKS_API_KEY`）で渡します
 
 ### 止める
 
@@ -109,4 +126,5 @@ API サーバーのログは、公開用の jar（`java -jar`）では 1 行 1 �
 - `/api/` のリクエストごとに `GET /api/auth/me 200 42ms` のような 1 行を出し、JSON ではリクエスト ID・ステータス・処理時間・ログインした人の ID を項目として持ちます
 - リクエスト ID は応答のヘッダー `X-Request-Id` でも返します
 - 5xx は ERROR、1 秒以上かかったリクエストは WARN で出します（閾値は `application.properties` の `app.logging.slow-request-threshold`）
-- パスワード・JWT・Cookie・リクエストの本文・クエリ文字列は出しません
+- Google Books API を呼ぶたびに `Google Books API search 200 312ms（今日 12 回目）` のような 1 行を出します。JSON では種類（search・volume）・ステータス（つながらない・時間切れは 0）・処理時間・使い回したか・その日の回数を項目として持ちます。失敗したときと、その日の回数が 800 回を超えたときは WARN で出します
+- パスワード・JWT・Cookie・リクエストの本文・クエリ文字列（書籍検索の文字を含む）・Google Books API の API キーは出しません

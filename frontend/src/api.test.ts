@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  ApiError, ensureOk, fetchMe, isUsernameAvailable, login, logout, profileUrl, setSessionExpiredHandler, signup,
+  ApiError, bookSearchUrl, bookUrl, ensureOk, fetchBook, fetchMe, importBook, isUsernameAvailable, login, logout,
+  profileUrl, searchBooks, setSessionExpiredHandler, signup,
 } from './api'
 import { M } from './messages'
 import { json, mockFetch, sentJson } from './test/fetchMock'
@@ -99,9 +100,33 @@ describe('API の呼び出し方', () => {
     await expect(isUsernameAvailable('a&b=c')).resolves.toBe(false)
   })
 
+  it('書籍検索は q と、2 ページ目からは page を送る', async () => {
+    const fetch = mockFetch({
+      'GET /api/books/search?q=%E5%A4%8F%E7%9B%AE+%E6%BC%B1%E7%9F%B3': () => json(200, { items: [], hasNext: false }),
+      'GET /api/books/search?q=978-4&page=2': () => json(200, { items: [], hasNext: false }),
+    })
+    await searchBooks('夏目 漱石')
+    await searchBooks('978-4', 2)
+    expect(fetch.keys()).toHaveLength(2)
+  })
+
+  it('本の取り込みは Google Books の ID を JSON で送り、本の ID を返す', async () => {
+    const fetch = mockFetch({ 'POST /api/books': () => json(201, { id: 56 }) })
+    await expect(importBook('zyTCAlFPjgYC')).resolves.toBe(56)
+    expect(sentJson(fetch)).toEqual({ googleBooksId: 'zyTCAlFPjgYC' })
+  })
+
+  it('本の情報', async () => {
+    const fetch = mockFetch({ 'GET /api/books/56': () => json(200, {}) })
+    await fetchBook(56)
+    expect(fetch.keys()).toEqual(['GET /api/books/56'])
+  })
+
   it('画面の URL を作る', () => {
     expect(profileUrl('taro_y')).toBe('/users/taro_y')
     expect(profileUrl('a/b')).toBe('/users/a%2Fb')
+    expect(bookSearchUrl('猫 & 犬')).toBe('/books/search?q=%E7%8C%AB+%26+%E7%8A%AC')
+    expect(bookUrl(56)).toBe('/books/56')
   })
 })
 

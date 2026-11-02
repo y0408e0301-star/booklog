@@ -12,15 +12,23 @@ import CurrentLocation from './CurrentLocation'
 
 export const me: Me = { username: 'taro_y', displayName: 'たろう' }
 
-// path は URL か、state（G-1 に渡すメッセージなど）つきの場所
-export function renderComponent(ui: ReactNode, { path = '/', auth = {} }: { path?: InitialEntry, auth?: Partial<Auth> } = {}) {
+type Options = {
+  // URL か、state（G-1 に渡すメッセージなど）つきの場所
+  path?: InitialEntry
+  // 部品が useParams で読む URL の形（例：/books/:id）
+  route?: string
+  auth?: Partial<Auth>
+}
+
+export function renderComponent(ui: ReactNode, { path = '/', route = '*', auth = {} }: Options = {}) {
   const value: Auth = { me, signedIn: vi.fn(), signOut: vi.fn(async () => {}), ...auth }
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AuthContext value={value}>
         <ToastProvider>
           <Routes>
-            <Route path="*" element={<>{ui}<CurrentLocation /></>} />
+            <Route path={route} element={<>{ui}<CurrentLocation /></>} />
+            {route !== '*' && <Route path="*" element={<CurrentLocation />} />}
           </Routes>
         </ToastProvider>
       </AuthContext>
