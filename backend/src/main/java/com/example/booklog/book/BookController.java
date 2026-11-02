@@ -3,6 +3,8 @@ package com.example.booklog.book;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,10 +54,10 @@ class BookController {
 	}
 
 	@Tag(name = "FN-10 本のページ")
-	@Operation(summary = "本の情報", description = "取り込んだ本の情報。Google Books API は呼ばない")
+	@Operation(summary = "本の情報", description = "取り込んだ本の情報と、レビューの平均評価・件数・自分のレビュー。Google Books API は呼ばない")
 	@GetMapping("/{id}")
-	BookService.BookDetail detail(@PathVariable long id) {
-		return this.bookService.detail(id);
+	BookService.BookDetail detail(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
+		return this.bookService.detail(Long.parseLong(jwt.getSubject()), id);
 	}
 
 	record ImportBookRequest(@Schema(requiredMode = Schema.RequiredMode.REQUIRED,

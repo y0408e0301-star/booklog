@@ -38,6 +38,16 @@ public enum ErrorCode {
 	// 本のページ（FN-10 9 章。M-15）
 	BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "この本は見つかりません。"),
 
+	// レビュー（FN-03 9 章。M-16〜M-18・M-20）
+	RATING_REQUIRED(HttpStatus.BAD_REQUEST, "星を 1〜5 から選んでください。"),
+
+	BODY_REQUIRED(HttpStatus.BAD_REQUEST, "感想を入力してください。"),
+
+	// 同じ本のレビューがすでにある（別のブラウザで先に書いたなど）
+	REVIEW_EXISTS(HttpStatus.CONFLICT, "この本のレビューはすでに書いています。"),
+
+	REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "このレビューは削除されました。"),
+
 	// 画面を通さずに送られた、条件に合わない入力（JSON が読めない、上限を超えた文字数など）
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "入力が正しくありません。"),
 

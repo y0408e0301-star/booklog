@@ -18,5 +18,11 @@
   background: var(--frame); color: var(--text); font-weight: bold;
 }
 
+/* 画面には出さず、読み上げだけで伝える文字 */
+.srOnly {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 /* 2.4 一覧の代わりに出すメッセージ（画面の中身を出す場所の中央に補足文字で出す） */
 .empty { padding: 48px 24px; text-align: center; color: var(--sub); }

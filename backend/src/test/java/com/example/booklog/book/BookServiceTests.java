@@ -37,11 +37,14 @@ class BookServiceTests {
 	@Mock
 	BookRepository books;
 
+	@Mock
+	BookReviewStats reviewStats;
+
 	private BookService service;
 
 	@BeforeEach
 	void setUp() {
-		this.service = new BookService(this.catalog, this.books, TestEntities.fixedClock());
+		this.service = new BookService(this.catalog, this.books, this.reviewStats, TestEntities.fixedClock());
 	}
 
 	@Test
@@ -117,19 +120,22 @@ class BookServiceTests {
 		verifyNoInteractions(this.books, this.catalog);
 	}
 
+	// BK-1・BK-3・BK-4
 	@Test
-	void 本の情報() {
+	void 本の情報と平均評価と件数と自分のレビュー() {
 		when(this.books.findById(56L))
 			.thenReturn(Optional.of(TestEntities.withId(new Book(DATA, TestEntities.NOW), 56)));
-		assertThat(this.service.detail(56)).isEqualTo(new BookService.BookDetail(56, "吾輩は猫である", List.of("夏目漱石"), "新潮社",
-				"2003-06", "9784101010014", "紹介文", "https://books.google.com/a"));
+		when(this.reviewStats.of(56)).thenReturn(new BookReviewStats.Stats(4.3, 3));
+		when(this.reviewStats.myReviewId(1, 56)).thenReturn(1234L);
+		assertThat(this.service.detail(1, 56)).isEqualTo(new BookService.BookDetail(56, "吾輩は猫である", List.of("夏目漱石"),
+				"新潮社", "2003-06", "9784101010014", "紹介文", "https://books.google.com/a", 4.3, 3, 1234L));
 	}
 
 	// TC-10-6
 	@Test
 	void ない本はM15() {
 		when(this.books.findById(999L)).thenReturn(Optional.empty());
-		assertApiError(() -> this.service.detail(999), ErrorCode.BOOK_NOT_FOUND);
+		assertApiError(() -> this.service.detail(1, 999), ErrorCode.BOOK_NOT_FOUND);
 	}
 
 }

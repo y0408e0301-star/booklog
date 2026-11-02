@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { countChars, isValidDisplayName, isValidPassword, isValidUsername, limitChars } from './validation'
+import {
+  countChars, isValidDisplayName, isValidPassword, isValidUsername, limitChars, normalizeBody, remainingReviewChars,
+} from './validation'
 
 // 文字数の数え方（画面設計書 2.12）。API と同じくコードポイントで数える
 describe('countChars', () => {
@@ -68,5 +70,23 @@ describe('limitChars', () => {
     // 絵文字を途中で切らない
     expect(limitChars('😀'.repeat(31), 30)).toBe('😀'.repeat(30))
     expect(limitChars('', 30)).toBe('')
+  })
+})
+
+// FN-03 RV-4・4 章
+describe('normalizeBody', () => {
+  it('改行を LF にそろえてトリムする', () => {
+    expect(normalizeBody('  一\r\n二\r三\n  ')).toBe('一\n二\n三')
+  })
+})
+
+describe('remainingReviewChars', () => {
+  // TC-03-2
+  it('2,000 文字から、そろえた感想の文字数を引く', () => {
+    expect(remainingReviewChars('')).toBe(2000)
+    expect(remainingReviewChars('😀'.repeat(2000))).toBe(0)
+    expect(remainingReviewChars('あ'.repeat(2001))).toBe(-1)
+    // CRLF も 1 文字と数える
+    expect(remainingReviewChars('あ\r\nい')).toBe(1997)
   })
 })

@@ -158,6 +158,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/books/{bookId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 本のレビューの一覧
+         * @description 新しい順に 20 件ずつ
+         */
+        get: operations["listBookReviews"];
+        put?: never;
+        /**
+         * レビューを投稿する
+         * @description 1 人 1 冊に 1 つ（もうあれば 409）。その本が本棚になければ「読了」で入れる
+         */
+        post: operations["createReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/books/{id}": {
         parameters: {
             query?: never;
@@ -167,7 +191,7 @@ export interface paths {
         };
         /**
          * 本の情報
-         * @description 取り込んだ本の情報。Google Books API は呼ばない
+         * @description 取り込んだ本の情報と、レビューの平均評価・件数・自分のレビュー。Google Books API は呼ばない
          */
         get: operations["detail"];
         put?: never;
@@ -178,18 +202,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reviews/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** レビューの詳細 */
+        get: operations["getReview"];
+        put?: never;
+        post?: never;
+        /**
+         * レビューを削除する
+         * @description 自分のレビューだけ。写真・コメント・参考になったも消え、本と本棚は残る
+         */
+        delete: operations["deleteReview"];
+        options?: never;
+        head?: never;
+        /**
+         * レビューを編集する
+         * @description 自分のレビューだけ。投稿日時・並び順・参考になった・コメントは変わらない
+         */
+        patch: operations["editReview"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Author: {
+            displayName: string;
+            username: string;
+        };
         BookDetail: {
             authors: string[];
+            /** Format: double */
+            averageRating: number | null;
             description: string | null;
             /** Format: int64 */
             id: number;
             isbn13: string | null;
+            /** Format: int64 */
+            myReviewId: number | null;
             publishedDate: string | null;
             publisher: string | null;
+            /** Format: int64 */
+            reviewCount: number;
             thumbnailUrl: string | null;
             title: string;
         };
@@ -205,6 +264,13 @@ export interface components {
         BookSearchPage: {
             hasNext: boolean;
             items: components["schemas"]["BookSearchItem"][];
+        };
+        BookSummary: {
+            authors: string[];
+            /** Format: int64 */
+            id: number;
+            thumbnailUrl: string | null;
+            title: string;
         };
         ErrorResponse: {
             code: string;
@@ -226,6 +292,49 @@ export interface components {
         Me: {
             displayName: string;
             username: string;
+        };
+        Photo: {
+            /** Format: date-time */
+            expiresAt: string;
+            /** Format: int64 */
+            id: number;
+            url: string;
+        };
+        ReviewForm: {
+            /** @description 感想。改行を LF にそろえ、前後の空白を除いて 1〜2,000 文字（RV-4） */
+            body: string;
+            /**
+             * Format: int32
+             * @description 星。1〜5 の整数（RV-3）
+             */
+            rating: number;
+            /** @description ネタバレあり。省いたら false（RV-11） */
+            spoiler?: boolean;
+        };
+        ReviewPage: {
+            items: components["schemas"]["ReviewView"][];
+            nextCursor: string | null;
+        };
+        ReviewView: {
+            author: components["schemas"]["Author"];
+            body: string;
+            book: components["schemas"]["BookSummary"];
+            /** Format: int64 */
+            commentCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            editedAt: string | null;
+            helpfulByMe: boolean;
+            /** Format: int64 */
+            helpfulCount: number;
+            /** Format: int64 */
+            id: number;
+            mine: boolean;
+            photos: components["schemas"]["Photo"][];
+            /** Format: int32 */
+            rating: number;
+            spoiler: boolean;
         };
         SignupRequest: {
             /** @description 前後の空白を除いて 1〜30 文字（A-4） */
@@ -581,6 +690,93 @@ export interface operations {
             };
         };
     };
+    listBookReviews: {
+        parameters: {
+            query?: {
+                /** @description 前回の nextCursor。最初は省く */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                bookId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPage"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["ReviewForm"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewView"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     detail: {
         parameters: {
             query?: never;
@@ -599,6 +795,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BookDetail"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewView"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    editReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["ReviewForm"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewView"];
                 };
             };
             /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
