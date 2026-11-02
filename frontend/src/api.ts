@@ -153,7 +153,43 @@ export async function logout(): Promise<void> {
   await request('POST', '/api/auth/logout', undefined, false)
 }
 
+// ---------------------------------------------------------------- FN-02 書籍検索・登録
+
+// 検索の結果の 1 件（FN-02 6 章）。まだ取り込んでいない本もあるので、アプリの本の ID は持たない
+export type BookSearchItem = Schemas['BookSearchItem']
+
+// 20 件ずつ。hasNext が false なら続きはない（最大 5 ページ・100 件。B-3）
+export type BookSearchPage = Schemas['BookSearchPage']
+
+export function searchBooks(q: string, page = 1): Promise<BookSearchPage> {
+  const query = new URLSearchParams({ q })
+  if (page > 1) query.set('page', String(page))
+  return requestJson<BookSearchPage>('GET', `/api/books/search?${query}`)
+}
+
+// 選んだ本を取り込み、本の ID を返す。もう取り込んであれば同じ本の ID が返る（B-5・B-6）
+export async function importBook(googleBooksId: string): Promise<number> {
+  const res = await requestJson<Schemas['ImportedBook']>('POST', '/api/books',
+    { googleBooksId } satisfies Schemas['ImportBookRequest'])
+  return res.id
+}
+
+// ---------------------------------------------------------------- FN-10 本のページ
+
+// 本の詳細（FN-10 6 章）。平均評価・レビュー（1-4）、自分の読書ステータス（1-7）は、その機能で足す
+export type BookDetail = Schemas['BookDetail']
+
+export function fetchBook(id: number): Promise<BookDetail> {
+  return requestJson<BookDetail>('GET', `/api/books/${id}`)
+}
+
 // ---------------------------------------------------------------- 画面の URL（画面一覧 1 章）
+
+// G-4 書籍検索の結果画面。検索した文字を ?q= に入れる（開き直しても同じ結果を出す。B-10）
+export const bookSearchUrl = (q: string) => `/books/search?${new URLSearchParams({ q })}`
+
+// G-5 本のページ
+export const bookUrl = (id: number) => `/books/${id}`
 
 // G-8 プロフィール画面
 export const profileUrl = (username: string) => `/users/${encodeURIComponent(username)}`

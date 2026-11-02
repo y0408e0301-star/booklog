@@ -1,0 +1,11 @@
+/* 画面設計書 2.6 ヘッダーの検索欄：幅 280px。右に虫めがね */
+.wrap { display: block; width: 280px; }
+.box {
+  display: flex; align-items: center; width: 100%; height: 36px;
+  border: 1px solid var(--line); border-radius: 18px; background: var(--bg); overflow: hidden;
+}
+.box:focus-within { outline: 2px solid var(--primary); border-color: transparent; }
+.input { flex: 1; min-width: 0; height: 100%; border: none; outline: none; padding: 0 0 0 14px; font-size: 14px; color: var(--text); background: transparent; }
+.input::placeholder { color: var(--sub); }
+.button { flex: none; width: 36px; height: 100%; border: none; background: none; cursor: pointer; font-size: 15px; }
+.button:hover { background: var(--hover); }

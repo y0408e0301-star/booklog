@@ -118,14 +118,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/books": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 本を取り込む
+         * @description 検索の結果から選んだ本を取り込み、本の ID を返す。もう取り込んであれば Google Books API を呼ばない
+         */
+        post: operations["importBook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/books/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 本を探す
+         * @description ISBN か書名・著者名で Google Books API を探す。同じ文字・同じページは 24 時間使い回す。Google Books API が使えないとき・その日の上限に達したときは 503
+         */
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/books/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 本の情報
+         * @description 取り込んだ本の情報。Google Books API は呼ばない
+         */
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        BookDetail: {
+            authors: string[];
+            description: string | null;
+            /** Format: int64 */
+            id: number;
+            isbn13: string | null;
+            publishedDate: string | null;
+            publisher: string | null;
+            thumbnailUrl: string | null;
+            title: string;
+        };
+        BookSearchItem: {
+            authors: string[];
+            googleBooksId: string;
+            isbn13: string | null;
+            publishedDate: string | null;
+            publisher: string | null;
+            thumbnailUrl: string | null;
+            title: string;
+        };
+        BookSearchPage: {
+            hasNext: boolean;
+            items: components["schemas"]["BookSearchItem"][];
+        };
         ErrorResponse: {
             code: string;
             field: string | null;
             message: string;
+        };
+        ImportBookRequest: {
+            /** @description 検索の結果の googleBooksId。1〜40 文字の英数字と「-」「_」 */
+            googleBooksId: string;
+        };
+        ImportedBook: {
+            /** Format: int64 */
+            id: number;
         };
         LoginRequest: {
             password: string;
@@ -373,6 +465,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UsernameAvailability"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    importBook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportBookRequest"];
+            };
+        };
+        responses: {
+            /** @description もう取り込んであった */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportedBook"];
+                };
+            };
+            /** @description 新しく取り込んだ */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportedBook"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query?: {
+                /** @description ISBN か書名・著者名。前後の空白を除いて 1〜100 文字（B-1・B-2） */
+                q?: string;
+                /** @description 1〜5。省いたら 1（B-3） */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookSearchPage"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookDetail"];
                 };
             };
             /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */

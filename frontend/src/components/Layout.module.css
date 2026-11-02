@@ -14,9 +14,23 @@
   border-left: 1px solid var(--line); border-right: 1px solid var(--line);
 }
 
+/* 600px 未満で使う、検索欄を開くボタン（虫めがね）と閉じるボタン（←） */
+.searchToggle, .close {
+  display: none; width: 36px; height: 36px; border-radius: 50%; border: none; background: none;
+  cursor: pointer; font-size: 18px; color: var(--text); flex: none;
+}
+.searchToggle:hover, .close:hover { background: var(--hover); }
+
 @media (max-width: 599px) {
   /* アプリ名を「BL」に縮める（2.6） */
   .full { display: none; }
   .short { display: inline; }
   .container { border: none; }
+  /* 検索欄は虫めがねのボタンだけにし、押すとヘッダーの全体を検索欄にする（2.6） */
+  /* SearchBox.module.css の .wrap（display: block）より強くするため、.inner を付ける */
+  .inner .search { display: none; }
+  .searchToggle { display: inline-flex; align-items: center; justify-content: center; }
+  .searching .appName, .searching .right { display: none; }
+  .searching .close { display: inline-flex; align-items: center; justify-content: center; }
+  .inner.searching .search { display: block; flex: 1; width: auto; }
 }

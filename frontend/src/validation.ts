@@ -1,8 +1,10 @@
-// 入力の確認（機能定義書 FN-01 4 章）。API でも同じことを確かめる。機能を作るたびに足す
+// 入力の確認（機能定義書 FN-01・FN-02 4 章）。API でも同じことを確かめる。機能を作るたびに足す
 
 export const USERNAME_MAX = 15
 export const DISPLAY_NAME_MAX = 30
 export const PASSWORD_MAX = 64
+// 書籍検索の文字（FN-02 4 章）
+export const SEARCH_QUERY_MAX = 100
 
 // 文字数は Unicode の文字（コードポイント）で数える（画面設計書 2.12）。API の数え方と同じ
 export function countChars(text: string): number {

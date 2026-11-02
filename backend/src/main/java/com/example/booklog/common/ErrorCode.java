@@ -26,6 +26,18 @@ public enum ErrorCode {
 
 	REFRESH_FAILED(HttpStatus.UNAUTHORIZED, "ログインの有効期限が切れました。もう一度ログインしてください。"),
 
+	// 書籍検索・登録（FN-02 9 章。M-12・M-14・M-15）
+	QUERY_REQUIRED(HttpStatus.BAD_REQUEST, "ISBN か書名を入力してください。"),
+
+	// Google Books API が止まっている・5 秒を超えた・その日の上限に達した（B-8）
+	BOOK_SEARCH_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "本の検索がいまできません。時間をおいてもう一度お試しください。"),
+
+	// 選んだ本が Google Books に見つからない（消された）
+	GOOGLE_BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "この本は見つかりません。"),
+
+	// 本のページ（FN-10 9 章。M-15）
+	BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "この本は見つかりません。"),
+
 	// 画面を通さずに送られた、条件に合わない入力（JSON が読めない、上限を超えた文字数など）
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "入力が正しくありません。"),
 

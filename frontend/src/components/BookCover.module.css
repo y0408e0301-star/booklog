@@ -1,0 +1,7 @@
+/* 画面設計書 2.9 表紙。縦横の比を保って枠に収める */
+.cover { display: block; flex: none; object-fit: contain; }
+/* 表紙がないときは、枠の背景の色の枠に補足文字で「表紙なし」 */
+.none {
+  display: flex; flex: none; align-items: center; justify-content: center; text-align: center;
+  background: var(--frame); color: var(--sub); font-size: 12px; line-height: 1.3;
+}

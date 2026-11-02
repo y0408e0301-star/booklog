@@ -18,6 +18,10 @@ info:
     | UNAUTHENTICATED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
     | TOKEN_EXPIRED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
     | REFRESH_FAILED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
+    | QUERY_REQUIRED | 400 | ISBN か書名を入力してください。 |
+    | BOOK_SEARCH_UNAVAILABLE | 503 | 本の検索がいまできません。時間をおいてもう一度お試しください。 |
+    | GOOGLE_BOOK_NOT_FOUND | 404 | この本は見つかりません。 |
+    | BOOK_NOT_FOUND | 404 | この本は見つかりません。 |
     | BAD_REQUEST | 400 | 入力が正しくありません。 |
     | FORBIDDEN | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
     | NOT_FOUND | 404 | 見つかりません。 |
@@ -213,8 +217,208 @@ paths:
       summary: ユーザー ID が使えるか
       tags:
       - FN-01 ユーザー登録・ログイン
+  /api/books:
+    post:
+      description: 検索の結果から選んだ本を取り込み、本の ID を返す。もう取り込んであれば Google Books API を呼ばない
+      operationId: importBook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportBookRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportedBook"
+          description: もう取り込んであった
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportedBook"
+          description: 新しく取り込んだ
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 本を取り込む
+      tags:
+      - FN-02 書籍検索・登録
+  /api/books/search:
+    get:
+      description: ISBN か書名・著者名で Google Books API を探す。同じ文字・同じページは 24 時間使い回す。Google
+        Books API が使えないとき・その日の上限に達したときは 503
+      operationId: search
+      parameters:
+      - description: ISBN か書名・著者名。前後の空白を除いて 1〜100 文字（B-1・B-2）
+        in: query
+        name: q
+        required: false
+        schema:
+          type: string
+      - description: 1〜5。省いたら 1（B-3）
+        in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookSearchPage"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 本を探す
+      tags:
+      - FN-02 書籍検索・登録
+  /api/books/{id}:
+    get:
+      description: 取り込んだ本の情報。Google Books API は呼ばない
+      operationId: detail
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookDetail"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 本の情報
+      tags:
+      - FN-10 本のページ
 components:
   schemas:
+    BookDetail:
+      type: object
+      properties:
+        authors:
+          type: array
+          items:
+            type: string
+        description:
+          type:
+          - string
+          - "null"
+        id:
+          type: integer
+          format: int64
+        isbn13:
+          type:
+          - string
+          - "null"
+        publishedDate:
+          type:
+          - string
+          - "null"
+        publisher:
+          type:
+          - string
+          - "null"
+        thumbnailUrl:
+          type:
+          - string
+          - "null"
+        title:
+          type: string
+      required:
+      - authors
+      - description
+      - id
+      - isbn13
+      - publishedDate
+      - publisher
+      - thumbnailUrl
+      - title
+    BookSearchItem:
+      type: object
+      properties:
+        authors:
+          type: array
+          items:
+            type: string
+        googleBooksId:
+          type: string
+        isbn13:
+          type:
+          - string
+          - "null"
+        publishedDate:
+          type:
+          - string
+          - "null"
+        publisher:
+          type:
+          - string
+          - "null"
+        thumbnailUrl:
+          type:
+          - string
+          - "null"
+        title:
+          type: string
+      required:
+      - authors
+      - googleBooksId
+      - isbn13
+      - publishedDate
+      - publisher
+      - thumbnailUrl
+      - title
+    BookSearchPage:
+      type: object
+      properties:
+        hasNext:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookSearchItem"
+      required:
+      - hasNext
+      - items
     ErrorResponse:
       type: object
       properties:
@@ -230,6 +434,22 @@ components:
       - code
       - field
       - message
+    ImportBookRequest:
+      type: object
+      properties:
+        googleBooksId:
+          type: string
+          description: 検索の結果の googleBooksId。1〜40 文字の英数字と「-」「_」
+      required:
+      - googleBooksId
+    ImportedBook:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+      required:
+      - id
     LoginRequest:
       type: object
       properties:
