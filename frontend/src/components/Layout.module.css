@@ -1,0 +1,22 @@
+/* 画面設計書 2.6 ヘッダー */
+.header { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 1px solid var(--line); }
+.inner { max-width: 900px; margin: 0 auto; height: 56px; padding: 0 16px; display: flex; align-items: center; gap: 16px; }
+.appName { font-size: 20px; font-weight: bold; color: var(--text); white-space: nowrap; }
+.appName:hover { text-decoration: none; }
+.short { display: none; }
+.right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+/* 自分の頭文字の丸（押すと自分の G-8） */
+.me { display: inline-flex; border-radius: 50%; }
+
+/* 2.14 画面の幅：中身は横幅 600px の 1 列。600px 未満では横幅いっぱい */
+.container {
+  max-width: 600px; margin: 0 auto; min-height: calc(100vh - 57px);
+  border-left: 1px solid var(--line); border-right: 1px solid var(--line);
+}
+
+@media (max-width: 599px) {
+  /* アプリ名を「BL」に縮める（2.6） */
+  .full { display: none; }
+  .short { display: inline; }
+  .container { border: none; }
+}

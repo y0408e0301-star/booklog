@@ -1,0 +1,34 @@
+/* 色・文字は画面設計書 2 章（共通仕様）のとおり。画面ごとの見た目は *.module.css に書く */
+:root {
+  /* 2.1 色 */
+  --bg: #ffffff;
+  --line: #e5e7eb;
+  --text: #101828;
+  --sub: #475467;
+  --primary: #1a5fb4;
+  --primary-bg: #e8eef7;
+  --star: #b54708;
+  --star-empty: #98a2b3;
+  --danger: #b42318;
+  --frame: #f2f4f7;
+  --warning-bg: #ffebe6;
+  --hover: rgba(16, 24, 40, 0.04);
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+/* 2.2 文字。書体は OS に入っているものを使う */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, "Noto Sans JP", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button, input, textarea { font: inherit; }

@@ -11,6 +11,29 @@ permissions:
   contents: read
 
 jobs:
+  frontend:
+    name: 画面（lint・ユニットテスト・型チェック・ビルド）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      # API の型（src/api-schema.d.ts）を、API の仕様書（docs/api/openapi.yaml）から作り直して、コミットしたものと同じか確かめる
+      - name: API の型が仕様書と同じか
+        run: |
+          npm run gen:api
+          git diff --exit-code src/api-schema.d.ts || { echo "::error::npm run gen:api で作り直した src/api-schema.d.ts をコミットしてください"; exit 1; }
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
   backend:
     name: API サーバー（書式・静的解析・テスト）
     runs-on: ubuntu-latest
