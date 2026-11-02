@@ -1,0 +1,2 @@
+/* 画面設計書 2.4 お知らせ欄：ヘッダーのすぐ下、画面の横幅いっぱい。2.1 お知らせ（警告）の背景 */
+.notice { padding: 8px 16px; background: var(--warning-bg); color: var(--text); font-size: 14px; text-align: center; }

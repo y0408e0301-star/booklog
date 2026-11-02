@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc", "unicorn", "jsx-a11y", "import", "promise"],
+  // correctness（ほぼ確実に間違い）はエラー、suspicious（間違いの疑い）は警告。
+  // npm run lint は --deny-warnings 付きなので、警告が 1 つでもあれば失敗する
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    // React Hooks の決まり（呼ぶ場所・useEffect などの依存配列）。Vite の ESLint テンプレートと同じ
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
+    // Vite の Fast Refresh が効くように、コンポーネントのファイルからはコンポーネントだけを export する
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    // React 17 からの JSX 変換では import React は要らない
+    "react/react-in-jsx-scope": "off",
+    // CSS と、テストの expect を増やす jest-dom は import するだけで読み込まれる
+    "import/no-unassigned-import": ["warn", { "allow": ["**/*.css", "@testing-library/jest-dom/vitest"] }],
+    // autoFocus は、G-1・G-2 の最初の入力欄（モックと同じ）と、操作して開いた入力欄にだけ使う
+    "jsx-a11y/no-autofocus": "off"
+  }
+}

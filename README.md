@@ -7,13 +7,14 @@
 - 作る順番と進み具合：[開発計画書](docs/development-plan.md)
 - 開発ルール：[CONTRIBUTING.md](CONTRIBUTING.md)
 
-いまは API サーバーの土台と、ユーザー登録・ログインの API（開発計画書 1-1）まで作っています。画面・公開の手順は、作ったときに足します。
+いまは API サーバーと画面の土台、ユーザー登録・ログイン（開発計画書 1-1・1-2）まで作っています。公開の手順は、作ったときに足します。
 
 ## 起動方法
 
 ### 必要なもの
 
 - JDK 21
+- Node.js 24
 - Docker Desktop
 
 ### 初回だけ
@@ -26,6 +27,13 @@ git config core.hooksPath .githooks
 
 `git config core.hooksPath .githooks` は開発ルールを守らせる git フックを有効にする設定です（[CONTRIBUTING.md](CONTRIBUTING.md)）。
 
+画面の部品を入れます（`frontend` で 1 回だけ。`package.json` が変わったときもやり直します）。
+
+```
+cd frontend
+npm ci
+```
+
 ### 起動する
 
 ターミナルを使い、リポジトリのフォルダから次を順に実行します。
@@ -34,6 +42,9 @@ git config core.hooksPath .githooks
 | --- | --- | --- | --- |
 | 1 | データベース | `docker compose up -d` | 5432（PostgreSQL） |
 | 2 | API サーバー | `cd backend` → `.\mvnw.cmd spring-boot:run` | 8080 |
+| 3 | 画面 | 別のターミナルで `cd frontend` → `npm run dev` | 5173 |
+
+ブラウザで http://localhost:5173 を開きます。画面の dev サーバーは `/api` へのリクエストを API サーバー（8080）へ転送するので、画面と API は同じ場所（localhost:5173）にあるように見え、ログインの Cookie がそのまま使えます。
 
 - API サーバーは http://localhost:8080/actuator/health で `{"status":"UP"}` が返れば起動済みです
 - API の仕様書は http://localhost:8080/swagger-ui.html （Swagger UI）で見られます（下の「API の仕様書」）
@@ -42,16 +53,17 @@ git config core.hooksPath .githooks
 
 ### 止める
 
-- API サーバー：ターミナルで `Ctrl + C`
+- API サーバー・画面：それぞれのターミナルで `Ctrl + C`
 - データベース：`docker compose down`（データは残ります）
 
 ## テストとコードチェック
 
-| 対象 | コマンド（`backend` で実行） | 内容 |
+| 対象 | コマンド | 内容 |
 | --- | --- | --- |
-| API サーバー | `.\mvnw.cmd verify` | テスト（下の「API サーバーのテストの種類」）、書式チェック（spring-javaformat。直すときは `.\mvnw.cmd spring-javaformat:apply`）、静的解析（SpotBugs）。API の仕様書（docs/api/openapi.yaml）がコードと違えば、書き直して失敗する |
+| API サーバー | `backend` で `.\mvnw.cmd verify` | テスト（下の「API サーバーのテストの種類」）、書式チェック（spring-javaformat。直すときは `.\mvnw.cmd spring-javaformat:apply`）、静的解析（SpotBugs）。API の仕様書（docs/api/openapi.yaml）がコードと違えば、書き直して失敗する |
+| 画面 | `frontend` で `npm run lint` → `npm test` → `npm run build` | lint（oxlint。React Hooks の決まり・アクセシビリティを含む）、テスト（Vitest・Testing Library。下の「画面のテスト」）、型チェックとビルド |
 
-Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）が `mvnw verify` を自動で実行します。
+Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）が上の 2 つと、画面の API の型が仕様書と同じかを自動で確かめます。push の前に、手元で両方を流し直してください（[開発計画書 5 章](docs/development-plan.md)）。
 
 ### API サーバーのテストの種類
 
@@ -69,6 +81,16 @@ Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml]
 - H2 などのメモリーの DB は使いません。PostgreSQL にしかない機能を本番と同じ形で確かめるためです
 - Controller のテストで、ログインした状態は `ControllerTestSupport.loggedIn(ユーザーの ID)` で作ります。spring-security-test の `jwt()` は CSRF の確認を飛ばすため使いません（本アプリは Cookie で JWT を送るので CSRF を確かめています）
 
+### 画面のテスト
+
+`npm test` で、`src` の `*.test.ts(x)` をまとめて実行します。API は呼ばず、`fetch` を偽物（`src/test/fetchMock.ts`）にして、決めた応答を返します。
+
+| 種類 | ファイル | 確かめること |
+| --- | --- | --- |
+| 関数のテスト | `api.test.ts`・`validation.test.ts` | API の URL・メソッド・送る形、CSRF のヘッダー、JWT の取り直し（同時に 401 でも 1 回だけ）、入力の条件と境界値 |
+| 部品のテスト | `components/*.test.tsx`・`auth/*.test.tsx` | ヘッダー・トースト・通信切れのお知らせ・ログインの状態と移り先 |
+| 画面のテスト | `pages/*.test.tsx`・`App.test.tsx` | 機能定義書 10 章の観点のうち画面で確かめるもの（メッセージの出し方、押せる・押せない、移り先） |
+
 ## API の仕様書（OpenAPI）
 
 仕様書は API のコード（Controller と record）から springdoc-openapi で作ります。手で直しません（[基本設計書 2.1](docs/design/basic-design.md#21-api-の詳細設計)）。
@@ -78,7 +100,7 @@ Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml]
 | 開発中に見る・試す | API サーバーを起動して http://localhost:8080/swagger-ui.html を開く。「Try it out」でログイン（`POST /api/auth/login`）すると、そのあとの API も Cookie と CSRF のヘッダー付きで試せる |
 | ファイルで読む | [docs/api/openapi.yaml](docs/api/openapi.yaml) |
 
-API を変えたときは、`backend` で `.\mvnw.cmd verify` を実行します。仕様書が変われば、`docs/api/openapi.yaml` を書き直してテストが失敗するので、もう一度実行して通ることを確かめてからコミットします。仕様書と Swagger UI は、公開環境では出しません（`mvnw spring-boot:run` で起動したときの dev プロファイルだけで出します）。
+API を変えたときは、`backend` で `.\mvnw.cmd verify` を実行します。仕様書が変われば、`docs/api/openapi.yaml` を書き直してテストが失敗するので、もう一度実行して通ることを確かめます。続けて `frontend` で `npm run gen:api` を実行し、画面が使う API の型（`src/api-schema.d.ts`）を作り直してから、両方をコミットします。仕様書と Swagger UI は、公開環境では出しません（`mvnw spring-boot:run` で起動したときの dev プロファイルだけで出します）。
 
 ## ログ
 

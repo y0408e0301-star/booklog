@@ -1,0 +1,22 @@
+/* 画面設計書 2.3 ボタン。すべての画面で共通に使う */
+.primary, .secondary, .danger {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 36px; padding: 0 16px; border-radius: 18px;
+  border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+  font-size: 14px; font-weight: bold;
+}
+.primary { background: var(--primary); color: #fff; }
+.secondary { background: var(--bg); color: var(--text); border-color: var(--line); }
+.danger { background: var(--danger); color: #fff; }
+.primary:hover:not(:disabled), .secondary:hover:not(:disabled), .danger:hover:not(:disabled) { filter: brightness(0.9); }
+.primary:disabled, .secondary:disabled, .danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 2.10 頭文字の丸 */
+.avatar {
+  flex: none; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--frame); color: var(--text); font-weight: bold;
+}
+
+/* 2.4 一覧の代わりに出すメッセージ（画面の中身を出す場所の中央に補足文字で出す） */
+.empty { padding: 48px 24px; text-align: center; color: var(--sub); }
