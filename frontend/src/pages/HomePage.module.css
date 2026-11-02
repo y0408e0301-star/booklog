@@ -1,0 +1,15 @@
+/* 画面設計書 5 章 タブ。選んでいるタブは太字にし、主色の下線を引く */
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tab {
+  flex: 1; padding: 14px 0 12px; text-align: center; cursor: pointer;
+  background: none; border: none; border-bottom: 3px solid transparent;
+  color: var(--sub); font-size: 15px;
+}
+.tab:hover { background: var(--hover); }
+.active { color: var(--text); font-weight: bold; border-bottom-color: var(--primary); }
+
+/* 一覧の下の「読み込み中…」「これ以上のレビューはありません」、失敗したときの M-29 と「再読み込み」 */
+.status { display: block; padding: 20px 16px; text-align: center; color: var(--sub); }
+.status p { margin: 0 0 12px; }
+.status p:last-child { margin-bottom: 0; }
+.empty p { margin: 0 0 12px; }

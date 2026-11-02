@@ -17,7 +17,7 @@ import com.example.booklog.shelf.ReadingStatuses;
 import com.example.booklog.user.User;
 import com.example.booklog.user.UserRepository;
 
-// レビューの投稿・表示・編集・削除（機能定義書 FN-03）と、本のページのレビューの一覧（FN-10 BK-5）
+// レビューの投稿・表示・編集・削除（機能定義書 FN-03）と、レビューの一覧（本のページ FN-10 BK-5、タイムライン FN-09）
 @Service
 class ReviewService {
 
@@ -88,8 +88,25 @@ class ReviewService {
 		if (!this.books.existsById(bookId)) {
 			throw new ApiException(ErrorCode.BOOK_NOT_FOUND);
 		}
-		// 21 件目は「続きがあるか」を知るため（データ設計書 8.1）
-		List<Review> found = this.reviews.findByBookBefore(bookId, parseCursor(cursor), Limit.of(PAGE_SIZE + 1));
+		return page(this.reviews.findByBookBefore(bookId, parseCursor(cursor), Limit.of(PAGE_SIZE + 1)), viewerId);
+	}
+
+	// タイムライン（FN-09）：「フォロー中」は自分とフォローしている人、「すべて」は全員のレビューを、新しい順に 20 件ずつ
+	@Transactional(readOnly = true)
+	ReviewPage timeline(long viewerId, @Nullable String tab, @Nullable String cursor) {
+		long before = parseCursor(cursor);
+		Limit limit = Limit.of(PAGE_SIZE + 1);
+		if ("following".equals(tab)) {
+			return page(this.reviews.findFollowingBefore(viewerId, before, limit), viewerId);
+		}
+		if ("all".equals(tab)) {
+			return page(this.reviews.findAllBefore(before, limit), viewerId);
+		}
+		throw new ApiException(ErrorCode.BAD_REQUEST);
+	}
+
+	// 21 件取れたら 20 件を返し、20 件目の ID を次のカーソルにする（21 件目は「続きがあるか」を知るため。データ設計書 8.1）
+	private static ReviewPage page(List<Review> found, long viewerId) {
 		List<Review> page = found.subList(0, Math.min(found.size(), PAGE_SIZE));
 		String next = (found.size() > PAGE_SIZE) ? String.valueOf(page.getLast().getId()) : null;
 		return new ReviewPage(page.stream().map((review) -> ReviewView.of(review, viewerId)).toList(), next);

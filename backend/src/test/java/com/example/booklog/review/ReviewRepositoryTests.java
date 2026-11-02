@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import com.example.booklog.RepositoryTest;
 import com.example.booklog.book.Book;
 import com.example.booklog.book.BookData;
+import com.example.booklog.follow.Follow;
 import com.example.booklog.shelf.ReadingStatuses;
 import com.example.booklog.user.User;
 
@@ -65,6 +66,47 @@ class ReviewRepositoryTests {
 		assertThat(this.reviews.findByBookBefore(this.neko.getId(), second, Limit.of(21))).extracting(Review::getId)
 			.containsExactly(first);
 		assertThat(this.reviews.findByBookBefore(this.neko.getId(), Long.MAX_VALUE, Limit.of(1))).hasSize(1);
+	}
+
+	// TC-09-1（T-1）
+	@Test
+	void フォロー中は自分とフォローした人のレビューだけですべては全員() {
+		User jiro = this.em.persist(new User("jiro", "じろう", "hash", NOW));
+		long mine = save(this.taro, this.neko, 4).getId();
+		long followed = save(this.hanako, this.neko, 3).getId();
+		long other = save(jiro, this.neko, 5).getId();
+		this.em.persist(new Follow(this.taro.getId(), this.hanako.getId(), NOW));
+		this.em.flush();
+		this.em.clear();
+
+		assertThat(this.reviews.findFollowingBefore(this.taro.getId(), Long.MAX_VALUE, Limit.of(21)))
+			.extracting(Review::getId)
+			.containsExactly(followed, mine);
+		assertThat(this.reviews.findAllBefore(Long.MAX_VALUE, Limit.of(21))).extracting(Review::getId)
+			.containsExactly(other, followed, mine);
+		assertThat(this.reviews.findAllBefore(other, Limit.of(1))).extracting(Review::getId).containsExactly(followed);
+		// フォローされた側からは、フォローした人のレビューは見えない（自分の分だけ）
+		assertThat(this.reviews.findFollowingBefore(this.hanako.getId(), Long.MAX_VALUE, Limit.of(21)))
+			.extracting(Review::getId)
+			.containsExactly(followed);
+	}
+
+	// F-3（データ設計書 4.7）
+	@Test
+	void 自分自身はフォローできない() {
+		assertThatThrownBy(() -> this.jdbc.update("INSERT INTO follows (follower_id, followee_id) VALUES (?, ?)",
+				this.taro.getId(), this.taro.getId()))
+			.isInstanceOf(DataIntegrityViolationException.class);
+	}
+
+	// F-4（データ設計書 4.7）
+	@Test
+	void 同じ人を二回フォローできない() {
+		this.jdbc.update("INSERT INTO follows (follower_id, followee_id) VALUES (?, ?)", this.taro.getId(),
+				this.hanako.getId());
+		assertThatThrownBy(() -> this.jdbc.update("INSERT INTO follows (follower_id, followee_id) VALUES (?, ?)",
+				this.taro.getId(), this.hanako.getId()))
+			.isInstanceOf(DataIntegrityViolationException.class);
 	}
 
 	@Test

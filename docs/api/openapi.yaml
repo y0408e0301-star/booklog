@@ -506,6 +506,48 @@ paths:
       summary: レビューを編集する
       tags:
       - FN-03 レビュー
+  /api/timeline:
+    get:
+      description: following は自分とフォローしている人、all は全員のレビュー。新しい順に 20 件ずつ
+      operationId: readTimeline
+      parameters:
+      - description: following か all（T-1）
+        in: query
+        name: tab
+        required: false
+        schema:
+          type: string
+          enum:
+          - following
+          - all
+      - description: 前回の nextCursor。最初は省く
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewPage"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: タイムライン
+      tags:
+      - FN-09 タイムライン
 components:
   schemas:
     Author:

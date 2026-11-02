@@ -151,9 +151,20 @@ class ReviewControllerTests {
 	}
 
 	@Test
+	void タイムラインはタブとcursorを渡す() {
+		when(this.reviewService.timeline(1, "following", "80"))
+			.thenReturn(new ReviewService.ReviewPage(List.of(VIEW), "79"));
+		assertThat(this.mvc.get().uri("/api/timeline?tab=following&cursor=80").with(loggedIn(1))).hasStatusOk()
+			.bodyJson()
+			.extractingPath("$.nextCursor")
+			.isEqualTo("79");
+	}
+
+	@Test
 	void ログインしていなければ使えない() {
 		assertThat(this.mvc.get().uri("/api/reviews/1")).hasStatus(HttpStatus.UNAUTHORIZED);
 		assertThat(this.mvc.get().uri("/api/books/56/reviews")).hasStatus(HttpStatus.UNAUTHORIZED);
+		assertThat(this.mvc.get().uri("/api/timeline?tab=all")).hasStatus(HttpStatus.UNAUTHORIZED);
 		verifyNoInteractions(this.reviewService);
 	}
 
