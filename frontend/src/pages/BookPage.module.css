@@ -14,6 +14,19 @@
 .more { margin-top: 4px; padding: 0; border: none; background: none; color: var(--primary); cursor: pointer; font-size: 14px; }
 .more:hover { text-decoration: underline; }
 
+/* 平均評価（星 24px）と「レビュー 5 件」。0 件のときは「— レビュー 0 件」 */
+.info .rating { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+/* 「レビューを書く」（主ボタン）・「レビューを編集」（通常ボタン）。横幅いっぱい */
+.actions { margin-top: 16px; }
+.write { width: 100%; }
+.write:hover { text-decoration: none; }
+
+/* レビューの一覧 */
+.reviewsHead { margin: 0; padding: 12px 16px; font-size: 15px; border-bottom: 1px solid var(--line); }
+.status { display: block; padding: 20px 16px; text-align: center; color: var(--sub); }
+.status p { margin: 0 0 12px; }
+
 /* 600px 未満では、表紙を上の中央に置き、その下に書名などを並べる */
 @media (max-width: 599px) {
   .top { flex-direction: column; align-items: center; }

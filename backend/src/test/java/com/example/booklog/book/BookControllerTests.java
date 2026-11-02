@@ -87,19 +87,20 @@ class BookControllerTests {
 
 	@Test
 	void 本の情報を返す() {
-		when(this.bookService.detail(56)).thenReturn(new BookService.BookDetail(56, "吾輩は猫である", List.of("夏目漱石"), "新潮社",
-				"2003-06", "9784101010014", "紹介文", "https://books.google.com/a"));
+		when(this.bookService.detail(1, 56)).thenReturn(new BookService.BookDetail(56, "吾輩は猫である", List.of("夏目漱石"),
+				"新潮社", "2003-06", "9784101010014", "紹介文", "https://books.google.com/a", null, 0, null));
 
 		assertThat(this.mvc.get().uri("/api/books/56").with(loggedIn(1))).hasStatusOk().bodyJson().isStrictlyEqualTo("""
 				{"id":56,"title":"吾輩は猫である","authors":["夏目漱石"],"publisher":"新潮社","publishedDate":"2003-06",
-				 "isbn13":"9784101010014","description":"紹介文","thumbnailUrl":"https://books.google.com/a"}
+				 "isbn13":"9784101010014","description":"紹介文","thumbnailUrl":"https://books.google.com/a",
+				 "averageRating":null,"reviewCount":0,"myReviewId":null}
 				""");
 	}
 
 	// TC-10-6
 	@Test
 	void ない本は404() {
-		when(this.bookService.detail(999)).thenThrow(new ApiException(ErrorCode.BOOK_NOT_FOUND));
+		when(this.bookService.detail(1, 999)).thenThrow(new ApiException(ErrorCode.BOOK_NOT_FOUND));
 		assertError(this.mvc.get().uri("/api/books/999").with(loggedIn(1)).exchange(), ErrorCode.BOOK_NOT_FOUND);
 	}
 

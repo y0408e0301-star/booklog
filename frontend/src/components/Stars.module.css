@@ -1,0 +1,20 @@
+/* 画面設計書 2.8 星。塗った星は星の色、塗っていない星は星の空きの色。数字は文字の色で 14px */
+.stars { display: inline-flex; align-items: center; gap: 4px; line-height: 1; white-space: nowrap; }
+.filled { color: var(--star); }
+.empty { color: var(--star-empty); }
+.number { font-size: 14px; color: var(--text); }
+
+/* G-6 の星の入力。1 つ 32px 四方で、押せる大きさを 44px 四方にする */
+.input { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.buttons { display: flex; }
+.star {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  cursor: pointer; font-size: 32px; line-height: 1; color: var(--star-empty);
+}
+.star.on { color: var(--star); }
+/* ラジオボタンは見えなくしているので、カーソルがあることを星の枠で示す */
+.star:has(input:focus-visible) { outline: 2px solid var(--primary); border-radius: 8px; }
+.selected { color: var(--sub); }
+.fieldset { margin: 0; padding: 0; border: none; min-width: 0; }
+.legend { padding: 0; margin-bottom: 4px; font-weight: bold; }
+.error { color: var(--danger); margin: 4px 0 0; }

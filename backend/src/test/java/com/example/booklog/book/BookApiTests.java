@@ -150,7 +150,8 @@ class BookApiTests {
 			.bodyJson()
 			.isStrictlyEqualTo("""
 					{"id":%d,"title":"吾輩は猫である","authors":["夏目漱石"],"publisher":"新潮社","publishedDate":"2003-06",
-					 "isbn13":"9784101010014","description":"猫の目から見た人間の話。","thumbnailUrl":"https://books.google.com/a"}
+					 "isbn13":"9784101010014","description":"猫の目から見た人間の話。","thumbnailUrl":"https://books.google.com/a",
+					 "averageRating":null,"reviewCount":0,"myReviewId":null}
 					""".formatted(id));
 	}
 

@@ -157,9 +157,12 @@ function book(overrides: Partial<BookDetail> = {}): BookDetail {
   return {
     id: 56, title: '吾輩は猫である', authors: ['夏目漱石'], publisher: '新潮社', publishedDate: '2003-06-01',
     isbn13: '9784101010014', description: '猫の目から見た人間の話。', thumbnailUrl: 'https://books.google.com/a',
-    ...overrides,
+    averageRating: null, reviewCount: 0, myReviewId: null, ...overrides,
   }
 }
+
+// レビューの一覧は空（レビューの一覧のテストは reviews.test.tsx）
+const noReviews = { 'GET /api/books/56/reviews': () => json(200, { items: [], nextCursor: null }) }
 
 function renderBookPage(path = '/books/56') {
   return renderComponent(<BookPage />, { path, route: '/books/:id' })
@@ -171,7 +174,7 @@ describe('本のページ（G-5）', () => {
   })
 
   it('本の情報を出す（BK-1・BK-2）', async () => {
-    mockFetch({ 'GET /api/books/56': () => json(200, book()) })
+    mockFetch({ 'GET /api/books/56': () => json(200, book()), ...noReviews })
     renderBookPage()
 
     expect(await screen.findByRole('heading', { name: '吾輩は猫である' })).toBeInTheDocument()
@@ -188,16 +191,18 @@ describe('本のページ（G-5）', () => {
       'GET /api/books/56': () => json(200, book({
         authors: [], publisher: null, publishedDate: null, isbn13: null, description: null, thumbnailUrl: null,
       })),
+      ...noReviews,
     })
     renderBookPage()
 
     const section = await screen.findByRole('region', { name: '吾輩は猫である' })
-    expect(section).toHaveTextContent(/^表紙なし吾輩は猫である$/)
+    // 書名・平均評価（0 件なので「—」）・「レビューを書く」だけが出る
+    expect(section).toHaveTextContent(/^表紙なし吾輩は猫である—レビュー 0 件レビューを書く$/)
   })
 
   // TC-10-7
   it('紹介文の HTML の記号は文字のまま出し、改行はそのまま出す', async () => {
-    mockFetch({ 'GET /api/books/56': () => json(200, book({ description: '<b>太字</b> & 記号\n二行目' })) })
+    mockFetch({ 'GET /api/books/56': () => json(200, book({ description: '<b>太字</b> & 記号\n二行目' })), ...noReviews })
     renderBookPage()
     const description = await screen.findByText(/<b>太字<\/b> & 記号/)
     expect(description.textContent).toBe('<b>太字</b> & 記号\n二行目')
@@ -207,7 +212,7 @@ describe('本のページ（G-5）', () => {
     // jsdom は大きさを測らないので、5 行で切った紹介文が収まっていないことにする
     vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(200)
     vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(100)
-    mockFetch({ 'GET /api/books/56': () => json(200, book()) })
+    mockFetch({ 'GET /api/books/56': () => json(200, book()), ...noReviews })
     renderBookPage()
 
     const more = await screen.findByRole('button', { name: '続きを読む' })
@@ -219,7 +224,7 @@ describe('本のページ（G-5）', () => {
   })
 
   it('5 行に収まれば「続きを読む」を出さない', async () => {
-    mockFetch({ 'GET /api/books/56': () => json(200, book()) })
+    mockFetch({ 'GET /api/books/56': () => json(200, book()), ...noReviews })
     renderBookPage()
     await screen.findByText('猫の目から見た人間の話。')
     expect(screen.queryByRole('button', { name: '続きを読む' })).not.toBeInTheDocument()
@@ -242,6 +247,7 @@ describe('本のページ（G-5）', () => {
   it('読み込みに失敗したら M-29 と「再読み込み」', async () => {
     mockFetch({
       'GET /api/books/56': [() => json(500, { code: 'INTERNAL_ERROR', message: M[30], field: null }), () => json(200, book())],
+      ...noReviews,
     })
     renderBookPage()
     expect(await screen.findByRole('alert')).toHaveTextContent(M[29])

@@ -1,0 +1,9 @@
+/* 画面設計書 2.5 ダイアログ共通。後ろの画面を「背景の覆い」（黒・透明度 50%）で覆う */
+.overlay {
+  position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.5);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.dialog { background: var(--bg); border-radius: 16px; padding: 24px; width: 360px; max-width: 100%; }
+.dialog h2 { font-size: 18px; margin: 0 0 8px; }
+.dialog p { margin: 0 0 20px; color: var(--sub); }
+.buttons { display: flex; justify-content: flex-end; gap: 8px; }

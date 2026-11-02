@@ -176,11 +176,53 @@ export async function importBook(googleBooksId: string): Promise<number> {
 
 // ---------------------------------------------------------------- FN-10 本のページ
 
-// 本の詳細（FN-10 6 章）。平均評価・レビュー（1-4）、自分の読書ステータス（1-7）は、その機能で足す
+// 本の詳細（FN-10 6 章）。averageRating はレビューが 0 件なら null、myReviewId はまだ書いていなければ null。
+// 自分の読書ステータス（1-7）は、その機能で足す
 export type BookDetail = Schemas['BookDetail']
 
 export function fetchBook(id: number): Promise<BookDetail> {
   return requestJson<BookDetail>('GET', `/api/books/${id}`)
+}
+
+// ---------------------------------------------------------------- FN-03 レビュー
+
+// レビュー（機能定義書 3.5 ReviewView）。日時は ISO 8601 の UTC。spoiler が true でも body は返る（伏せるのは画面）
+export type ReviewView = Schemas['ReviewView']
+
+// 星・感想・ネタバレあり（FN-03 4 章）。写真（FN-04）は 1-6 で足す
+export type ReviewInput = { rating: number, body: string, spoiler: boolean }
+
+// 写真と一緒に送れるよう multipart で送る（FN-03 6 章）
+function reviewForm({ rating, body, spoiler }: ReviewInput): FormData {
+  const form = new FormData()
+  form.append('rating', String(rating))
+  form.append('body', body)
+  form.append('spoiler', String(spoiler))
+  return form
+}
+
+export function createReview(bookId: number, input: ReviewInput): Promise<ReviewView> {
+  return requestJson<ReviewView>('POST', `/api/books/${bookId}/reviews`, reviewForm(input))
+}
+
+export function fetchReview(id: number): Promise<ReviewView> {
+  return requestJson<ReviewView>('GET', `/api/reviews/${id}`)
+}
+
+export function editReview(id: number, input: ReviewInput): Promise<ReviewView> {
+  return requestJson<ReviewView>('PATCH', `/api/reviews/${id}`, reviewForm(input))
+}
+
+export async function deleteReview(id: number): Promise<void> {
+  await request('DELETE', `/api/reviews/${id}`)
+}
+
+// 新しい順に 20 件ずつ。nextCursor が null なら続きはない（BK-5）
+export type ReviewPage = Schemas['ReviewPage']
+
+export function fetchBookReviews(bookId: number, cursor: string | null = null): Promise<ReviewPage> {
+  const query = cursor === null ? '' : `?${new URLSearchParams({ cursor })}`
+  return requestJson<ReviewPage>('GET', `/api/books/${bookId}/reviews${query}`)
 }
 
 // ---------------------------------------------------------------- 画面の URL（画面一覧 1 章）
@@ -190,6 +232,12 @@ export const bookSearchUrl = (q: string) => `/books/search?${new URLSearchParams
 
 // G-5 本のページ
 export const bookUrl = (id: number) => `/books/${id}`
+
+// G-6 レビューの投稿・編集画面
+export const reviewFormUrl = (bookId: number) => `/books/${bookId}/review`
+
+// G-7 レビューの詳細画面
+export const reviewUrl = (id: number) => `/reviews/${id}`
 
 // G-8 プロフィール画面
 export const profileUrl = (username: string) => `/users/${encodeURIComponent(username)}`

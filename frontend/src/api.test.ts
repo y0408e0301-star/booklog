@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  ApiError, bookSearchUrl, bookUrl, ensureOk, fetchBook, fetchMe, importBook, isUsernameAvailable, login, logout,
-  profileUrl, searchBooks, setSessionExpiredHandler, signup,
+  ApiError, bookSearchUrl, bookUrl, createReview, deleteReview, editReview, ensureOk, fetchBook, fetchBookReviews, fetchMe,
+  fetchReview, importBook, isUsernameAvailable, login, logout, profileUrl, reviewFormUrl, reviewUrl, searchBooks,
+  setSessionExpiredHandler, signup,
 } from './api'
 import { M } from './messages'
-import { json, mockFetch, sentJson } from './test/fetchMock'
+import { json, mockFetch, sentForm, sentJson } from './test/fetchMock'
 
 const me = { username: 'taro_y', displayName: 'たろう' }
 
@@ -122,11 +123,39 @@ describe('API の呼び出し方', () => {
     expect(fetch.keys()).toEqual(['GET /api/books/56'])
   })
 
+  it('レビューの投稿・編集は multipart で送り、Content-Type はブラウザに任せる', async () => {
+    const fetch = mockFetch({
+      'POST /api/books/56/reviews': () => json(201, {}),
+      'PATCH /api/reviews/7': () => json(200, {}),
+    })
+    await createReview(56, { rating: 4, body: '面白い', spoiler: false })
+    await editReview(7, { rating: 2, body: '読み直した', spoiler: true })
+    expect(Object.fromEntries(sentForm(fetch, 0))).toEqual({ rating: '4', body: '面白い', spoiler: 'false' })
+    expect(Object.fromEntries(sentForm(fetch, 1))).toEqual({ rating: '2', body: '読み直した', spoiler: 'true' })
+    expect(fetch.calls[0].init?.headers).not.toHaveProperty('Content-Type')
+  })
+
+  it('レビューの詳細・削除と、本のレビューの一覧（続きは cursor）', async () => {
+    const fetch = mockFetch({
+      'GET /api/reviews/7': () => json(200, {}),
+      'DELETE /api/reviews/7': () => json(204),
+      'GET /api/books/56/reviews': () => json(200, { items: [], nextCursor: null }),
+      'GET /api/books/56/reviews?cursor=80': () => json(200, { items: [], nextCursor: null }),
+    })
+    await fetchReview(7)
+    await deleteReview(7)
+    await fetchBookReviews(56)
+    await fetchBookReviews(56, '80')
+    expect(fetch.keys()).toHaveLength(4)
+  })
+
   it('画面の URL を作る', () => {
     expect(profileUrl('taro_y')).toBe('/users/taro_y')
     expect(profileUrl('a/b')).toBe('/users/a%2Fb')
     expect(bookSearchUrl('猫 & 犬')).toBe('/books/search?q=%E7%8C%AB+%26+%E7%8A%AC')
     expect(bookUrl(56)).toBe('/books/56')
+    expect(reviewFormUrl(56)).toBe('/books/56/review')
+    expect(reviewUrl(7)).toBe('/reviews/7')
   })
 })
 

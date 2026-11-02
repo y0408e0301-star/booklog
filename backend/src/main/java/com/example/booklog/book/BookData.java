@@ -6,11 +6,11 @@ import org.jspecify.annotations.Nullable;
 
 // Google Books API の 1 冊を、本アプリで持つ形にそろえたもの（FN-02 5 章の 3〜6、BR-11）。
 // 検索の結果の 1 件と、取り込む本の両方に使う。そろえ方は GoogleBooksVolumes
-record BookData(String googleBooksId, @Nullable String isbn13, String title, List<String> authors,
+public record BookData(String googleBooksId, @Nullable String isbn13, String title, List<String> authors,
 		@Nullable String publisher, @Nullable String publishedDate, @Nullable String description,
 		@Nullable String thumbnailUrl) {
 
-	BookData {
+	public BookData {
 		authors = List.copyOf(authors);
 	}
 

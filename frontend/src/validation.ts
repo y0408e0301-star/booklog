@@ -1,10 +1,12 @@
-// 入力の確認（機能定義書 FN-01・FN-02 4 章）。API でも同じことを確かめる。機能を作るたびに足す
+// 入力の確認（機能定義書 FN-01〜FN-03 4 章）。API でも同じことを確かめる。機能を作るたびに足す
 
 export const USERNAME_MAX = 15
 export const DISPLAY_NAME_MAX = 30
 export const PASSWORD_MAX = 64
 // 書籍検索の文字（FN-02 4 章）
 export const SEARCH_QUERY_MAX = 100
+// レビューの感想（FN-03 RV-4）
+export const REVIEW_BODY_MAX = 2000
 
 // 文字数は Unicode の文字（コードポイント）で数える（画面設計書 2.12）。API の数え方と同じ
 export function countChars(text: string): number {
@@ -31,4 +33,14 @@ export function isValidPassword(password: string): boolean {
 export function isValidDisplayName(displayName: string): boolean {
   const length = countChars(displayName)
   return length >= 1 && length <= DISPLAY_NAME_MAX
+}
+
+// 感想は改行を LF にそろえてトリムした後で数える（FN-03 4 章。API と同じ）
+export function normalizeBody(body: string): string {
+  return body.replace(/\r\n?/g, '\n').trim()
+}
+
+// 感想の残りの文字数（RV-4）。負の数なら送れない
+export function remainingReviewChars(body: string): number {
+  return REVIEW_BODY_MAX - countChars(normalizeBody(body))
 }

@@ -1,0 +1,38 @@
+/* G-6 レビューの投稿・編集画面（画面設計書 8 章） */
+.head { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+.head h1 { margin: 0; font-size: 18px; }
+.back {
+  width: 36px; height: 36px; border-radius: 50%; border: none; background: none; cursor: pointer;
+  font-size: 18px; color: var(--text); flex: none;
+}
+.back:hover { background: var(--hover); }
+
+.form { padding: 16px; }
+.book { display: flex; gap: 10px; margin-bottom: 16px; }
+.bookInfo { display: flex; flex-direction: column; min-width: 0; }
+.bookTitle { font-weight: bold; font-size: 15px; overflow-wrap: anywhere; }
+.sub { color: var(--sub); }
+
+.field { margin-bottom: 16px; }
+.label { display: block; font-weight: bold; margin-bottom: 4px; }
+.error { color: var(--danger); margin: 4px 0 0; }
+
+/* 感想：高さ 8 行で、入力に合わせて 20 行まで高くする（useAutoGrow） */
+.body {
+  display: block; width: 100%; min-height: calc(8 * 1.5em + 18px); resize: none; padding: 8px 10px;
+  font-size: 15px; line-height: 1.5; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; overflow-y: auto;
+}
+.body:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.invalid { border-color: var(--danger); }
+.bodyFoot { display: flex; justify-content: space-between; gap: 8px; }
+.bodyFoot .count { margin-left: auto; margin-top: 4px; }
+/* 残りの文字数。2,000 文字を超えたら危険色 */
+.count { color: var(--sub); }
+.over { color: var(--danger); font-weight: bold; }
+
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.check input { width: 18px; height: 18px; margin: 0; }
+.hint { color: var(--sub); margin: 4px 0 0 26px; }
+
+.buttons { display: flex; justify-content: flex-end; gap: 8px; }
