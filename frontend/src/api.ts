@@ -279,6 +279,34 @@ export async function deleteComment(id: number): Promise<void> {
   await request('DELETE', `/api/comments/${id}`)
 }
 
+// ---------------------------------------------------------------- FN-07 フォロー
+
+// 一覧に出すユーザー（機能定義書 3.5）。bioFirstLine は自己紹介の 1 行目、me は自分か
+export type UserSummary = Schemas['UserSummary']
+
+// フォロー・解除の結果。followerCount はほかの人の操作も含めた相手の最新のフォロワー数（FN-07 6 章）
+export type FollowResult = Schemas['FollowResult']
+
+// 新しくフォローした順に 20 件ずつ。nextCursor が null なら続きはない（F-5）
+export type UserPage = Schemas['UserPage']
+
+// フォローする（F-1）・解除する（F-2）。何回送っても同じ結果になる
+export function follow(username: string): Promise<FollowResult> {
+  return requestJson<FollowResult>('PUT', `/api/users/${encodeURIComponent(username)}/follow`)
+}
+
+export function unfollow(username: string): Promise<FollowResult> {
+  return requestJson<FollowResult>('DELETE', `/api/users/${encodeURIComponent(username)}/follow`)
+}
+
+// その人がフォローしている人（following）・その人をフォローしている人（followers）
+export type FollowListKind = 'following' | 'followers'
+
+export function fetchFollowList(username: string, kind: FollowListKind, cursor: string | null = null): Promise<UserPage> {
+  const query = cursor === null ? '' : `?${new URLSearchParams({ cursor })}`
+  return requestJson<UserPage>('GET', `/api/users/${encodeURIComponent(username)}/${kind}${query}`)
+}
+
 // ---------------------------------------------------------------- FN-08 読書ステータス・本棚
 
 // 読みたい・読書中・読了（FN-08 4 章）
@@ -321,3 +349,6 @@ export const reviewUrl = (id: number) => `/reviews/${id}`
 
 // G-8 プロフィール画面
 export const profileUrl = (username: string) => `/users/${encodeURIComponent(username)}`
+
+// G-10 フォロー中・フォロワーの一覧画面
+export const followListUrl = (username: string, kind: FollowListKind) => `${profileUrl(username)}/${kind}`

@@ -105,7 +105,7 @@ class ReadingStatusesRepositoryTests {
 			.containsExactly(this.neko.getId(), third.getId(), this.kokoro.getId());
 
 		List<ReadingStatuses.ShelfItem> rest = this.statuses.page(this.taro.getId(), ReadingStatus.READ,
-				ShelfCursor.after(all.get(1)), 21);
+				ShelfService.cursorOf(all.get(1)), 21);
 		assertThat(rest).extracting((item) -> item.book().id()).containsExactly(this.kokoro.getId());
 		assertThat(this.statuses.page(this.taro.getId(), ReadingStatus.READ, null, 1)).hasSize(1);
 		assertThat(this.statuses.page(this.taro.getId(), ReadingStatus.WANT, null, 21)).isEmpty();
