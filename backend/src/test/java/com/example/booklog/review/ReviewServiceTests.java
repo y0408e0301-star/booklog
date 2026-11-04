@@ -36,6 +36,7 @@ import com.example.booklog.book.BookData;
 import com.example.booklog.book.BookRepository;
 import com.example.booklog.book.BookSummary;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.helpful.Helpfuls;
 import com.example.booklog.shelf.ReadingStatuses;
 import com.example.booklog.storage.PhotoFormat;
 import com.example.booklog.storage.PhotoStorage;
@@ -73,6 +74,9 @@ class ReviewServiceTests {
 	@Mock
 	StorageDeleter deleter;
 
+	@Mock
+	Helpfuls helpfuls;
+
 	private ReviewService service;
 
 	private final User taro = TestEntities.user(1, "taro_y");
@@ -84,9 +88,9 @@ class ReviewServiceTests {
 
 	@BeforeEach
 	void setUp() {
-		// ReviewViews は本物を使い、写真の行と S3 だけを偽物にする
+		// ReviewViews は本物を使い、写真の行・S3・参考になったを偽物にする（参考になったは 0 件として数える）
 		this.service = new ReviewService(this.reviews, this.photos, this.books, this.users, this.readingStatuses,
-				new ReviewViews(this.photos, this.storage), this.storage, this.deleter,
+				new ReviewViews(this.photos, this.storage, this.helpfuls), this.storage, this.deleter,
 				TestEntities.immediateTransaction(), TestEntities.fixedClock());
 	}
 

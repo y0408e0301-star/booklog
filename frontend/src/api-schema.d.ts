@@ -271,6 +271,30 @@ export interface paths {
         patch: operations["editReview"];
         trace?: never;
     };
+    "/api/reviews/{id}/helpful": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 参考になったを付ける
+         * @description 何回送っても同じ結果になる。自分のレビューには付けられない（403）
+         */
+        put: operations["markHelpful"];
+        post?: never;
+        /**
+         * 参考になったを取り消す
+         * @description 何回送っても同じ結果になる
+         */
+        delete: operations["unmarkHelpful"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/timeline": {
         parameters: {
             query?: never;
@@ -377,6 +401,11 @@ export interface components {
             code: string;
             field: string | null;
             message: string;
+        };
+        HelpfulResult: {
+            helpful: boolean;
+            /** Format: int64 */
+            helpfulCount: number;
         };
         ImportBookRequest: {
             /** @description 検索の結果の googleBooksId。1〜40 文字の英数字と「-」「_」 */
@@ -1174,6 +1203,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewView"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    markHelpful: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpfulResult"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unmarkHelpful: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HelpfulResult"];
                 };
             };
             /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */

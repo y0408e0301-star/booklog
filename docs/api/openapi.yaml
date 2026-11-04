@@ -30,6 +30,7 @@ info:
     | PHOTO_TOO_LARGE | 413 | 添えられるのは 5MB までの JPEG・PNG・WebP の画像です。 |
     | PHOTO_TYPE_INVALID | 400 | 添えられるのは 5MB までの JPEG・PNG・WebP の画像です。 |
     | PHOTO_UPLOAD_FAILED | 500 | 投稿に失敗しました。時間をおいてもう一度お試しください。 |
+    | CANNOT_MARK_OWN_REVIEW | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
     | USER_NOT_FOUND | 404 | このユーザーは見つかりません。 |
     | BAD_REQUEST | 400 | 入力が正しくありません。 |
     | FORBIDDEN | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
@@ -615,6 +616,71 @@ paths:
       summary: レビューを編集する
       tags:
       - FN-03 レビュー
+  /api/reviews/{id}/helpful:
+    delete:
+      description: 何回送っても同じ結果になる
+      operationId: unmarkHelpful
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelpfulResult"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 参考になったを取り消す
+      tags:
+      - FN-05 参考になった
+    put:
+      description: 何回送っても同じ結果になる。自分のレビューには付けられない（403）
+      operationId: markHelpful
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HelpfulResult"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 参考になったを付ける
+      tags:
+      - FN-05 参考になった
   /api/timeline:
     get:
       description: following は自分とフォローしている人、all は全員のレビュー。新しい順に 20 件ずつ
@@ -894,6 +960,17 @@ components:
       - code
       - field
       - message
+    HelpfulResult:
+      type: object
+      properties:
+        helpful:
+          type: boolean
+        helpfulCount:
+          type: integer
+          format: int64
+      required:
+      - helpful
+      - helpfulCount
     ImportBookRequest:
       type: object
       properties:
