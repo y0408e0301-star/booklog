@@ -6,7 +6,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import com.example.booklog.book.BookSummary;
-import com.example.booklog.user.User;
+import com.example.booklog.user.Author;
 
 // レビューを返すときの形（機能定義書 3.5 ReviewView）。spoiler が true でも body と photos は返す（伏せるのは画面。FN-03 5 章の 5）
 public record ReviewView(long id, Author author, BookSummary book, int rating, String body, boolean spoiler,
@@ -17,20 +17,12 @@ public record ReviewView(long id, Author author, BookSummary book, int rating, S
 		photos = List.copyOf(photos);
 	}
 
-	// 写真・参考になったは ReviewViews がまとめて取って渡す。コメント（1-9）は、その機能を作るときに足す
-	static ReviewView of(Review review, long viewerId, List<Photo> photos, long helpfulCount, boolean helpfulByMe) {
+	// 写真・参考になった・コメント数は ReviewViews がまとめて取って渡す
+	static ReviewView of(Review review, long viewerId, List<Photo> photos, long helpfulCount, boolean helpfulByMe,
+			long commentCount) {
 		return new ReviewView(review.getId(), Author.of(review.getAuthor()), BookSummary.of(review.getBook()),
-				review.getRating(), review.getBody(), review.isSpoiler(), photos, helpfulCount, 0, helpfulByMe,
-				review.isWrittenBy(viewerId), review.getCreatedAt(), review.getEditedAt());
-	}
-
-	// 書いた人（機能定義書 3.5）
-	public record Author(String username, String displayName) {
-
-		static Author of(User user) {
-			return new Author(user.getUsername(), user.getDisplayName());
-		}
-
+				review.getRating(), review.getBody(), review.isSpoiler(), photos, helpfulCount, commentCount,
+				helpfulByMe, review.isWrittenBy(viewerId), review.getCreatedAt(), review.getEditedAt());
 	}
 
 	// 写真。url は署名付き URL で、expiresAt を過ぎると使えない（FN-04 PH-8）

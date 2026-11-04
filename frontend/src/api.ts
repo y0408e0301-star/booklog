@@ -255,6 +255,30 @@ export function unmarkHelpful(reviewId: number): Promise<HelpfulResult> {
   return requestJson<HelpfulResult>('DELETE', `/api/reviews/${reviewId}/helpful`)
 }
 
+// ---------------------------------------------------------------- FN-06 コメント
+
+// コメント（FN-06 6 章）。author はレビューの author と同じ形
+export type CommentView = Schemas['CommentView']
+
+// 古い順に 50 件ずつ。nextCursor が null なら続きはない（C-3）
+export type CommentPage = Schemas['CommentPage']
+
+export function fetchComments(reviewId: number, cursor: string | null = null): Promise<CommentPage> {
+  const query = cursor === null ? '' : `?${new URLSearchParams({ cursor })}`
+  return requestJson<CommentPage>('GET', `/api/reviews/${reviewId}/comments${query}`)
+}
+
+// 本文はトリムした後のものを送る（C-1・C-2）
+export function createComment(reviewId: number, body: string): Promise<CommentView> {
+  return requestJson<CommentView>('POST', `/api/reviews/${reviewId}/comments`,
+    { body } satisfies Schemas['CreateCommentRequest'])
+}
+
+// 消せるのは自分のコメントだけ（C-5）
+export async function deleteComment(id: number): Promise<void> {
+  await request('DELETE', `/api/comments/${id}`)
+}
+
 // ---------------------------------------------------------------- FN-08 読書ステータス・本棚
 
 // 読みたい・読書中・読了（FN-08 4 章）

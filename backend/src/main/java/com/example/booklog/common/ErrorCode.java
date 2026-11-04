@@ -61,6 +61,11 @@ public enum ErrorCode {
 	// 参考になった（FN-05 9 章）。画面を通さずに自分のレビューに付けようとした。画面には M-30 を出す
 	CANNOT_MARK_OWN_REVIEW(HttpStatus.FORBIDDEN, "操作に失敗しました。時間をおいてもう一度お試しください。"),
 
+	// コメント（FN-06 9 章）。本文が空なのは画面を通さずに送ったときだけなので、画面には M-30 を出す
+	COMMENT_REQUIRED(HttpStatus.BAD_REQUEST, "コメントを入力してください。"),
+
+	COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "このコメントは削除されました。"),
+
 	// 読書ステータス・本棚（FN-08 9 章。M-28）
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "このユーザーは見つかりません。"),
 

@@ -7,6 +7,8 @@ export const PASSWORD_MAX = 64
 export const SEARCH_QUERY_MAX = 100
 // レビューの感想（FN-03 RV-4）
 export const REVIEW_BODY_MAX = 2000
+// コメントの本文（FN-06 C-2）
+export const COMMENT_BODY_MAX = 500
 
 // 文字数は Unicode の文字（コードポイント）で数える（画面設計書 2.12）。API の数え方と同じ
 export function countChars(text: string): number {
@@ -43,6 +45,11 @@ export function normalizeBody(body: string): string {
 // 感想の残りの文字数（RV-4）。負の数なら送れない
 export function remainingReviewChars(body: string): number {
   return REVIEW_BODY_MAX - countChars(normalizeBody(body))
+}
+
+// コメントの残りの文字数（C-2）。数え方は感想と同じ
+export function remainingCommentChars(body: string): number {
+  return COMMENT_BODY_MAX - countChars(normalizeBody(body))
 }
 
 // ---- 写真（FN-04 PH-1〜PH-3）

@@ -31,6 +31,8 @@ info:
     | PHOTO_TYPE_INVALID | 400 | 添えられるのは 5MB までの JPEG・PNG・WebP の画像です。 |
     | PHOTO_UPLOAD_FAILED | 500 | 投稿に失敗しました。時間をおいてもう一度お試しください。 |
     | CANNOT_MARK_OWN_REVIEW | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
+    | COMMENT_REQUIRED | 400 | コメントを入力してください。 |
+    | COMMENT_NOT_FOUND | 404 | このコメントは削除されました。 |
     | USER_NOT_FOUND | 404 | このユーザーは見つかりません。 |
     | BAD_REQUEST | 400 | 入力が正しくありません。 |
     | FORBIDDEN | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
@@ -486,6 +488,35 @@ paths:
       summary: 本の情報
       tags:
       - FN-10 本のページ
+  /api/comments/{commentId}:
+    delete:
+      description: 自分のコメントだけ。レビューを書いた人も、ほかの人のコメントは消せない
+      operationId: deleteComment
+      parameters:
+      - in: path
+        name: commentId
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "204":
+          description: No Content
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: コメントを削除する
+      tags:
+      - FN-06 コメント
   /api/photos/urls:
     post:
       description: 削除された写真は結果に入らない
@@ -681,6 +712,83 @@ paths:
       summary: 参考になったを付ける
       tags:
       - FN-05 参考になった
+  /api/reviews/{reviewId}/comments:
+    get:
+      description: 古い順に 50 件ずつ
+      operationId: listComments
+      parameters:
+      - in: path
+        name: reviewId
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - description: 前回の nextCursor。最初は省く
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentPage"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: コメントの一覧
+      tags:
+      - FN-06 コメント
+    post:
+      description: 自分のレビューにも付けられる
+      operationId: createComment
+      parameters:
+      - in: path
+        name: reviewId
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentView"
+          description: Created
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: コメントする
+      tags:
+      - FN-06 コメント
   /api/timeline:
     get:
       description: following は自分とフォローしている人、all は全員のレビュー。新しい順に 20 件ずつ
@@ -917,6 +1025,49 @@ components:
       - id
       - thumbnailUrl
       - title
+    CommentPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommentView"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+      - nextCursor
+    CommentView:
+      type: object
+      properties:
+        author:
+          $ref: "#/components/schemas/Author"
+        body:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        id:
+          type: integer
+          format: int64
+        mine:
+          type: boolean
+      required:
+      - author
+      - body
+      - createdAt
+      - id
+      - mine
+    CreateCommentRequest:
+      type: object
+      properties:
+        body:
+          type: string
+          description: 改行を LF にそろえ、前後の空白を除いて 1〜500 文字（C-2）
+      required:
+      - body
     EditReviewForm:
       type: object
       properties:
