@@ -17,8 +17,8 @@
 /* 平均評価（星 24px）と「レビュー 5 件」。0 件のときは「— レビュー 0 件」 */
 .info .rating { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 
-/* 「レビューを書く」（主ボタン）・「レビューを編集」（通常ボタン）。横幅いっぱい */
-.actions { margin-top: 16px; }
+/* 読書ステータスのボタンと、その下の「レビューを書く」（主ボタン）・「レビューを編集」（通常ボタン）。横幅いっぱい */
+.actions { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
 .write { width: 100%; }
 .write:hover { text-decoration: none; }
 

@@ -182,6 +182,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/books/{bookId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 読書ステータスを付ける・変える
+         * @description 自分の本棚だけ。同じステータスなら並び順を変えない
+         */
+        put: operations["setReadingStatus"];
+        post?: never;
+        /**
+         * 読書ステータスを外す
+         * @description 自分の本棚から本をなくす。レビューは消さない
+         */
+        delete: operations["removeReadingStatus"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/books/{id}": {
         parameters: {
             query?: never;
@@ -267,6 +291,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{username}/bookshelf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 本棚の一覧
+         * @description ステータスを付けた（変えた）日時の新しい順に 20 冊ずつ。誰の本棚でも見られる
+         */
+        get: operations["listBookshelf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -285,6 +329,8 @@ export interface components {
             isbn13: string | null;
             /** Format: int64 */
             myReviewId: number | null;
+            /** @enum {string|null} */
+            myStatus: "WANT" | "READING" | "READ" | null;
             publishedDate: string | null;
             publisher: string | null;
             /** Format: int64 */
@@ -393,6 +439,19 @@ export interface components {
             rating: number;
             spoiler: boolean;
         };
+        ShelfItem: {
+            book: components["schemas"]["BookSummary"];
+            /** Format: int32 */
+            rating: number | null;
+            /** @enum {string} */
+            status: "WANT" | "READING" | "READ";
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ShelfPage: {
+            items: components["schemas"]["ShelfItem"][];
+            nextCursor: string | null;
+        };
         SignupRequest: {
             /** @description 前後の空白を除いて 1〜30 文字（A-4） */
             displayName: string;
@@ -400,6 +459,14 @@ export interface components {
             password: string;
             /** @description 前後の空白を除いて 3〜15 文字の半角英数字と「_」（A-2） */
             username: string;
+        };
+        StatusRequest: {
+            /** @enum {string} */
+            status: "WANT" | "READING" | "READ";
+        };
+        StatusResponse: {
+            /** @enum {string|null} */
+            status: "WANT" | "READING" | "READ" | null;
         };
         UrlsRequest: {
             /** @description 写真の ID。50 個まで */
@@ -841,6 +908,90 @@ export interface operations {
             };
         };
     };
+    setReadingStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    removeReadingStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     detail: {
         parameters: {
             query?: never;
@@ -1066,6 +1217,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewPage"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listBookshelf: {
+        parameters: {
+            query?: {
+                /** @description WANT・READING・READ のどれか（ST-4） */
+                status?: "WANT" | "READING" | "READ";
+                /** @description 前回の nextCursor。最初は省く */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShelfPage"];
                 };
             };
             /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */

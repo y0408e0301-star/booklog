@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import com.example.booklog.ControllerTest;
 import com.example.booklog.common.ApiException;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.shelf.ReadingStatus;
 
 // 書籍検索・本の取り込み（FN-02 6 章）と本の情報（FN-10 6 章）の API の入口：URL・ステータス・JSON の形。処理の中身は BookServiceTests
 @ControllerTest(BookController.class)
@@ -87,13 +88,14 @@ class BookControllerTests {
 
 	@Test
 	void 本の情報を返す() {
-		when(this.bookService.detail(1, 56)).thenReturn(new BookService.BookDetail(56, "吾輩は猫である", List.of("夏目漱石"),
-				"新潮社", "2003-06", "9784101010014", "紹介文", "https://books.google.com/a", null, 0, null));
+		when(this.bookService.detail(1, 56))
+			.thenReturn(new BookService.BookDetail(56, "吾輩は猫である", List.of("夏目漱石"), "新潮社", "2003-06", "9784101010014",
+					"紹介文", "https://books.google.com/a", null, 0, null, ReadingStatus.READING));
 
 		assertThat(this.mvc.get().uri("/api/books/56").with(loggedIn(1))).hasStatusOk().bodyJson().isStrictlyEqualTo("""
 				{"id":56,"title":"吾輩は猫である","authors":["夏目漱石"],"publisher":"新潮社","publishedDate":"2003-06",
 				 "isbn13":"9784101010014","description":"紹介文","thumbnailUrl":"https://books.google.com/a",
-				 "averageRating":null,"reviewCount":0,"myReviewId":null}
+				 "averageRating":null,"reviewCount":0,"myReviewId":null,"myStatus":"READING"}
 				""");
 	}
 

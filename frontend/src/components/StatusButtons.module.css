@@ -1,0 +1,10 @@
+/* 画面設計書 2.3 の切り替えボタン。押していないときは通常ボタン、押しているときは主色の薄い背景・主色の枠と文字 */
+.buttons { display: flex; gap: 8px; margin: 0; padding: 0; border: none; min-width: 0; }
+.button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  height: 36px; padding: 0 16px; border-radius: 18px; cursor: pointer; white-space: nowrap;
+  font-size: 14px; font-weight: bold;
+  background: var(--bg); color: var(--text); border: 1px solid var(--line);
+}
+.button:hover { filter: brightness(0.9); }
+.on { background: var(--primary-bg); color: var(--primary); border-color: var(--primary); }

@@ -15,7 +15,7 @@ import ReviewPage from './ReviewPage'
 function book(overrides: Partial<BookDetail> = {}): BookDetail {
   return {
     id: 56, title: 'こころ', authors: ['夏目漱石'], publisher: null, publishedDate: null, isbn13: null,
-    description: null, thumbnailUrl: null, averageRating: null, reviewCount: 0, myReviewId: null, ...overrides,
+    description: null, thumbnailUrl: null, averageRating: null, reviewCount: 0, myReviewId: null, myStatus: null, ...overrides,
   }
 }
 

@@ -4,6 +4,7 @@ import { ApiError, fetchBook, fetchBookReviews, reviewFormUrl, type BookDetail, 
 import BookCover from '../components/BookCover'
 import ReviewCard from '../components/ReviewCard'
 import Stars from '../components/Stars'
+import StatusButtons from '../components/StatusButtons'
 import ui from '../components/ui.module.css'
 import { publisherAndDate } from '../format'
 import { M } from '../messages'
@@ -16,8 +17,7 @@ type Result = { id: number, attempt: number } & (
   | { status: 'failed' }
 )
 
-// G-5 本のページ（画面設計書 7 章、FN-10）。本の情報はデータベースから読み、Google Books API は呼ばない（N-8）。
-// 読書ステータスのボタン（1-7）は、その機能を作るときに足す
+// G-5 本のページ（画面設計書 7 章、FN-10）。本の情報はデータベースから読み、Google Books API は呼ばない（N-8）
 export default function BookPage() {
   const { id: rawId = '' } = useParams()
   // 数でない ID は、API を呼ばずに「見つからない」にする（BK-7）
@@ -78,7 +78,7 @@ export default function BookPage() {
   )
 }
 
-// 本の情報（BK-1・BK-2）、平均評価と件数（BK-3）、「レビューを書く」「レビューを編集」（BK-4、RV-1）
+// 本の情報（BK-1・BK-2）、平均評価と件数（BK-3）、読書ステータス（ST-1）、「レビューを書く」「レビューを編集」（BK-4、RV-1）
 function BookInfo({ book }: { book: BookDetail }) {
   const sub = publisherAndDate(book.publisher, book.publishedDate)
   return (
@@ -100,6 +100,7 @@ function BookInfo({ book }: { book: BookDetail }) {
       </div>
       {book.description && <Description text={book.description} />}
       <div className={styles.actions}>
+        <StatusButtons bookId={book.id} initial={book.myStatus} />
         {book.myReviewId === null
           ? <Link to={reviewFormUrl(book.id)} className={`${ui.primary} ${styles.write}`}>レビューを書く</Link>
           : <Link to={reviewFormUrl(book.id)} className={`${ui.secondary} ${styles.write}`}>レビューを編集</Link>}
