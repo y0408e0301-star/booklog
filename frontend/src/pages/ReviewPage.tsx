@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import { ApiError, bookUrl, fetchReview, type ReviewView } from '../api'
+import Comments from '../components/Comments'
 import ReviewCard from '../components/ReviewCard'
+import cardStyles from '../components/ReviewCard.module.css'
 import ui from '../components/ui.module.css'
 import { M } from '../messages'
 import styles from './ReviewFormPage.module.css'
@@ -12,8 +14,7 @@ type Result = { id: number, attempt: number } & (
   | { status: 'failed' }
 )
 
-// G-7 レビューの詳細画面（画面設計書 9 章、FN-03 RV-6・RV-13）。感想は全部出す。
-// コメント（1-9）は、その機能を作るときに足す
+// G-7 レビューの詳細画面（画面設計書 9 章、FN-03 RV-6・RV-13、FN-06）。感想は全部出し、下にコメントを出す
 export default function ReviewPage() {
   const { id: rawId = '' } = useParams()
   const id = /^[1-9][0-9]{0,15}$/.test(rawId) ? Number(rawId) : null
@@ -64,10 +65,11 @@ export default function ReviewPage() {
         </div>
       )
     }
-    // 削除したらその本の G-5 に移る（FN-03 3.3）
+    // 削除したらその本の G-5 に移る（FN-03 3.3）。コメントを付けようとしたら削除されていたときは M-20 を出す
     return (
-      <ReviewCard review={result.review} showBook detail
-        onDelete={() => navigate(bookUrl(result.review.book.id), { replace: true })} />
+      <ReviewDetail key={result.review.id} review={result.review}
+        onDelete={() => navigate(bookUrl(result.review.book.id), { replace: true })}
+        onDeleted={() => setResult({ id: result.id, attempt, status: 'deleted' })} />
     )
   }
 
@@ -78,6 +80,37 @@ export default function ReviewPage() {
         <h1>レビュー</h1>
       </div>
       {content()}
+    </>
+  )
+}
+
+// カードとコメント。ネタバレありのレビューでは、「ネタバレを表示」を押すまでコメントの見出し・フォーム・一覧もまとめて伏せる（C-6）
+function ReviewDetail({ review, onDelete, onDeleted }: {
+  review: ReviewView
+  onDelete: () => void
+  onDeleted: () => void
+}) {
+  // ネタバレを開いたか。この画面を開いている間だけ覚える（RV-12）
+  const [revealed, setRevealed] = useState(false)
+  // 自分が付けた・消した分（カードと見出しのコメント数に足す）
+  const [delta, setDelta] = useState(0)
+  const commentCount = review.commentCount + delta
+  const hidden = review.spoiler && !revealed
+
+  return (
+    <>
+      <ReviewCard review={review} showBook detail onDelete={onDelete} revealed={revealed}
+        onReveal={() => setRevealed(true)} commentCount={commentCount} />
+      {hidden
+        ? (
+          <div className={styles.commentsCover}>
+            <div className={cardStyles.spoiler}><span>⚠ ネタバレあり</span></div>
+          </div>
+        )
+        : (
+          <Comments reviewId={review.id} count={commentCount} onCountChange={(n) => setDelta((d) => d + n)}
+            onReviewDeleted={onDeleted} />
+        )}
     </>
   )
 }

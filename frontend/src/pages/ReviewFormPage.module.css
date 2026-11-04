@@ -47,3 +47,6 @@
 .photoHint { color: var(--sub); margin: 4px 0 0; }
 
 .buttons { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* G-7 でネタバレありのとき、コメントの見出し・フォーム・一覧の代わりに出す枠（画面設計書 9 章） */
+.commentsCover { padding: 0 16px 12px; }

@@ -21,16 +21,24 @@ type Props = {
   detail?: boolean
   // 削除した（削除されていた）レビューを、並べている画面から消す
   onDelete: (id: number) => void
+  // G-7 では、ネタバレを開いたかを画面で持つ（コメントも一緒に伏せるため。C-6）。省いたらカードの中で持つ
+  revealed?: boolean
+  onReveal?: () => void
+  // G-7 では、コメントを付けた・消した分を足したコメント数を出す（TC-06-4）。省いたら review の値
+  commentCount?: number
 }
 
 // レビューのカード（画面設計書 2.7。G-3・G-5・G-7・G-8 で共通）
-export default function ReviewCard({ review, showBook, detail = false, onDelete }: Props) {
+export default function ReviewCard({ review, showBook, detail = false, onDelete, ...props }: Props) {
   const navigate = useNavigate()
   const toast = useToast()
   const [confirming, setConfirming] = useState(false)
   // ネタバレありのレビューを開いたか。その画面を開いている間だけ覚える（RV-12）
-  const [revealed, setRevealed] = useState(false)
+  const [ownRevealed, setOwnRevealed] = useState(false)
+  const revealed = props.revealed ?? ownRevealed
+  const reveal = props.onReveal ?? (() => setOwnRevealed(true))
   const hidden = review.spoiler && !revealed
+  const commentCount = props.commentCount ?? review.commentCount
 
   async function handleDelete() {
     try {
@@ -85,7 +93,7 @@ export default function ReviewCard({ review, showBook, detail = false, onDelete 
         )}
         <div className={styles.rating}><Stars value={review.rating} size={16} /></div>
         {hidden
-          ? <SpoilerCover onReveal={() => setRevealed(true)} />
+          ? <SpoilerCover onReveal={reveal} />
           : (
             <>
               <ReviewBody review={review} detail={detail} focusOnMount={revealed} />
@@ -95,10 +103,10 @@ export default function ReviewCard({ review, showBook, detail = false, onDelete 
         <div className={styles.actions}>
           <HelpfulButton review={review} onDelete={onDelete} />
           {detail
-            ? <span className={styles.action} aria-label={`コメント ${review.commentCount} 件`}>💬 {review.commentCount}</span>
+            ? <span className={styles.action} aria-label={`コメント ${commentCount} 件`}>💬 {commentCount}</span>
             : (
               <Link to={reviewUrl(review.id)} className={`${styles.action} ${styles.countLink}`}
-                aria-label={`コメント ${review.commentCount} 件`}>💬 {review.commentCount}</Link>
+                aria-label={`コメント ${commentCount} 件`}>💬 {commentCount}</Link>
             )}
         </div>
       </div>

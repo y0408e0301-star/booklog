@@ -8,11 +8,12 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.example.booklog.comment.CommentCounts;
 import com.example.booklog.helpful.Helpfuls;
 import com.example.booklog.storage.PhotoStorage;
 
-// レビューを ReviewView にする。写真・参考になったはレビューごとに SQL を出さず、まとめて 1 回で取る（FN-09 3 章、TC-09-6）。
-// 写真の URL は署名付き URL（15 分）にする（FN-04 5 章の 4）。コメント（1-9）も、その機能でここに足す
+// レビューを ReviewView にする。写真・参考になった・コメント数はレビューごとに SQL を出さず、まとめて 1 回で取る
+// （FN-09 3 章、TC-09-6）。写真の URL は署名付き URL（15 分）にする（FN-04 5 章の 4）
 @Component
 class ReviewViews {
 
@@ -22,10 +23,13 @@ class ReviewViews {
 
 	private final Helpfuls helpfuls;
 
-	ReviewViews(ReviewPhotoRepository photos, PhotoStorage storage, Helpfuls helpfuls) {
+	private final CommentCounts commentCounts;
+
+	ReviewViews(ReviewPhotoRepository photos, PhotoStorage storage, Helpfuls helpfuls, CommentCounts commentCounts) {
 		this.photos = photos;
 		this.storage = storage;
 		this.helpfuls = helpfuls;
+		this.commentCounts = commentCounts;
 	}
 
 	ReviewView of(Review review, long viewerId) {
@@ -44,9 +48,11 @@ class ReviewViews {
 					Collectors.mapping(this::photo, Collectors.toList())));
 		Map<Long, Long> helpfulCounts = this.helpfuls.counts(ids);
 		Set<Long> markedByViewer = this.helpfuls.markedBy(viewerId, ids);
+		Map<Long, Long> commentCounts = this.commentCounts.of(ids);
 		return reviews.stream()
 			.map((review) -> ReviewView.of(review, viewerId, photosByReview.getOrDefault(review.getId(), List.of()),
-					helpfulCounts.getOrDefault(review.getId(), 0L), markedByViewer.contains(review.getId())))
+					helpfulCounts.getOrDefault(review.getId(), 0L), markedByViewer.contains(review.getId()),
+					commentCounts.getOrDefault(review.getId(), 0L)))
 			.toList();
 	}
 

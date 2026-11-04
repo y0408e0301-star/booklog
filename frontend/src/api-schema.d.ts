@@ -226,6 +226,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/comments/{commentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * コメントを削除する
+         * @description 自分のコメントだけ。レビューを書いた人も、ほかの人のコメントは消せない
+         */
+        delete: operations["deleteComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/photos/urls": {
         parameters: {
             query?: never;
@@ -290,6 +310,30 @@ export interface paths {
          * @description 何回送っても同じ結果になる
          */
         delete: operations["unmarkHelpful"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reviews/{reviewId}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * コメントの一覧
+         * @description 古い順に 50 件ずつ
+         */
+        get: operations["listComments"];
+        put?: never;
+        /**
+         * コメントする
+         * @description 自分のレビューにも付けられる
+         */
+        post: operations["createComment"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -381,6 +425,23 @@ export interface components {
             id: number;
             thumbnailUrl: string | null;
             title: string;
+        };
+        CommentPage: {
+            items: components["schemas"]["CommentView"][];
+            nextCursor: string | null;
+        };
+        CommentView: {
+            author: components["schemas"]["Author"];
+            body: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: int64 */
+            id: number;
+            mine: boolean;
+        };
+        CreateCommentRequest: {
+            /** @description 改行を LF にそろえ、前後の空白を除いて 1〜500 文字（C-2） */
+            body: string;
         };
         EditReviewForm: {
             /** @description 感想。改行を LF にそろえ、前後の空白を除いて 1〜2,000 文字（RV-4） */
@@ -1061,6 +1122,44 @@ export interface operations {
             };
         };
     };
+    deleteComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                commentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     refreshPhotoUrls: {
         parameters: {
             query?: never;
@@ -1283,6 +1382,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HelpfulResult"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listComments: {
+        parameters: {
+            query?: {
+                /** @description 前回の nextCursor。最初は省く */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                reviewId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentPage"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reviewId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCommentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentView"];
                 };
             };
             /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */

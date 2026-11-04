@@ -29,13 +29,14 @@ import com.example.booklog.ControllerTest;
 import com.example.booklog.book.BookSummary;
 import com.example.booklog.common.ApiException;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.user.Author;
 
 // レビューの API（FN-03 6 章）と本のレビューの一覧（FN-10 6 章）の入口：URL・ステータス・JSON の形・multipart の受け取り方。
 // 処理の中身は ReviewServiceTests
 @ControllerTest(ReviewController.class)
 class ReviewControllerTests {
 
-	private static final ReviewView VIEW = new ReviewView(1234, new ReviewView.Author("taro_y", "たろう"),
+	private static final ReviewView VIEW = new ReviewView(1234, new Author("taro_y", "たろう"),
 			new BookSummary(56, "こころ", List.of("夏目漱石"), null), 4, "面白かった", false, List.of(), 0, 0, false, true,
 			Instant.parse("2026-11-01T06:30:00Z"), null);
 
