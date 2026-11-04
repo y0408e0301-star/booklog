@@ -30,6 +30,7 @@ info:
     | PHOTO_TOO_LARGE | 413 | 添えられるのは 5MB までの JPEG・PNG・WebP の画像です。 |
     | PHOTO_TYPE_INVALID | 400 | 添えられるのは 5MB までの JPEG・PNG・WebP の画像です。 |
     | PHOTO_UPLOAD_FAILED | 500 | 投稿に失敗しました。時間をおいてもう一度お試しください。 |
+    | USER_NOT_FOUND | 404 | このユーザーは見つかりません。 |
     | BAD_REQUEST | 400 | 入力が正しくありません。 |
     | FORBIDDEN | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
     | NOT_FOUND | 404 | 見つかりません。 |
@@ -380,6 +381,77 @@ paths:
       summary: レビューを投稿する
       tags:
       - FN-03 レビュー
+  /api/books/{bookId}/status:
+    delete:
+      description: 自分の本棚から本をなくす。レビューは消さない
+      operationId: removeReadingStatus
+      parameters:
+      - in: path
+        name: bookId
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 読書ステータスを外す
+      tags:
+      - FN-08 読書ステータス・本棚
+    put:
+      description: 自分の本棚だけ。同じステータスなら並び順を変えない
+      operationId: setReadingStatus
+      parameters:
+      - in: path
+        name: bookId
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusResponse"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 読書ステータスを付ける・変える
+      tags:
+      - FN-08 読書ステータス・本棚
   /api/books/{id}:
     get:
       description: 取り込んだ本の情報と、レビューの平均評価・件数・自分のレビュー。Google Books API は呼ばない
@@ -585,6 +657,54 @@ paths:
       summary: タイムライン
       tags:
       - FN-09 タイムライン
+  /api/users/{username}/bookshelf:
+    get:
+      description: ステータスを付けた（変えた）日時の新しい順に 20 冊ずつ。誰の本棚でも見られる
+      operationId: listBookshelf
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      - description: WANT・READING・READ のどれか（ST-4）
+        in: query
+        name: status
+        required: false
+        schema:
+          type: string
+          enum:
+          - WANT
+          - READING
+          - READ
+      - description: 前回の nextCursor。最初は省く
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShelfPage"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 本棚の一覧
+      tags:
+      - FN-08 読書ステータス・本棚
 components:
   schemas:
     Author:
@@ -625,6 +745,14 @@ components:
           - integer
           - "null"
           format: int64
+        myStatus:
+          type:
+          - string
+          - "null"
+          enum:
+          - WANT
+          - READING
+          - READ
         publishedDate:
           type:
           - string
@@ -649,6 +777,7 @@ components:
       - id
       - isbn13
       - myReviewId
+      - myStatus
       - publishedDate
       - publisher
       - reviewCount
@@ -905,6 +1034,44 @@ components:
       - photos
       - rating
       - spoiler
+    ShelfItem:
+      type: object
+      properties:
+        book:
+          $ref: "#/components/schemas/BookSummary"
+        rating:
+          type:
+          - integer
+          - "null"
+          format: int32
+        status:
+          type: string
+          enum:
+          - WANT
+          - READING
+          - READ
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - book
+      - rating
+      - status
+      - updatedAt
+    ShelfPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShelfItem"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+      - nextCursor
     SignupRequest:
       type: object
       properties:
@@ -921,6 +1088,30 @@ components:
       - displayName
       - password
       - username
+    StatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - WANT
+          - READING
+          - READ
+      required:
+      - status
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type:
+          - string
+          - "null"
+          enum:
+          - WANT
+          - READING
+          - READ
+      required:
+      - status
     UrlsRequest:
       type: object
       properties:

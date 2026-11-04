@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.booklog.common.ApiException;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.shelf.ReadingStatus;
+import com.example.booklog.shelf.ReadingStatuses;
 
 // 書籍検索・本の取り込み（FN-02）と、本の情報（FN-10）
 @Service
@@ -26,12 +28,16 @@ class BookService {
 
 	private final BookReviewStats reviewStats;
 
+	private final ReadingStatuses readingStatuses;
+
 	private final Clock clock;
 
-	BookService(BookCatalog catalog, BookRepository books, BookReviewStats reviewStats, Clock clock) {
+	BookService(BookCatalog catalog, BookRepository books, BookReviewStats reviewStats, ReadingStatuses readingStatuses,
+			Clock clock) {
 		this.catalog = catalog;
 		this.books = books;
 		this.reviewStats = reviewStats;
+		this.readingStatuses = readingStatuses;
 		this.clock = clock;
 	}
 
@@ -73,28 +79,30 @@ class BookService {
 	@Transactional(readOnly = true)
 	BookDetail detail(long viewerId, long id) {
 		Book book = this.books.findById(id).orElseThrow(() -> new ApiException(ErrorCode.BOOK_NOT_FOUND));
-		return BookDetail.of(book, this.reviewStats.of(id), this.reviewStats.myReviewId(viewerId, id));
+		return BookDetail.of(book, this.reviewStats.of(id), this.reviewStats.myReviewId(viewerId, id),
+				this.readingStatuses.statusOf(viewerId, id));
 	}
 
 	// created：新しく取り込んだか（201）、もうあったか（200）
 	record ImportResult(long id, boolean created) {
 	}
 
-	// 本の詳細（FN-10 6 章）。averageRating はレビューが 0 件なら null、myReviewId はまだ書いていなければ null。
-	// 自分の読書ステータス（myStatus）は、読書ステータスのボタン（開発計画書 1-7）で足す
+	// 本の詳細（FN-10 6 章）。averageRating はレビューが 0 件なら null、myReviewId はまだ書いていなければ null、
+	// myStatus は自分の本棚になければ null
 	record BookDetail(long id, String title, List<String> authors, @Nullable String publisher,
 			@Nullable String publishedDate, @Nullable String isbn13, @Nullable String description,
-			@Nullable String thumbnailUrl, @Nullable Double averageRating, long reviewCount,
-			@Nullable Long myReviewId) {
+			@Nullable String thumbnailUrl, @Nullable Double averageRating, long reviewCount, @Nullable Long myReviewId,
+			@Nullable ReadingStatus myStatus) {
 
 		BookDetail {
 			authors = List.copyOf(authors);
 		}
 
-		static BookDetail of(Book book, BookReviewStats.Stats stats, @Nullable Long myReviewId) {
+		static BookDetail of(Book book, BookReviewStats.Stats stats, @Nullable Long myReviewId,
+				@Nullable ReadingStatus myStatus) {
 			return new BookDetail(book.getId(), book.getTitle(), book.getAuthors(), book.getPublisher(),
 					book.getPublishedDate(), book.getIsbn13(), book.getDescription(), book.getThumbnailUrl(),
-					stats.averageRating(), stats.reviewCount(), myReviewId);
+					stats.averageRating(), stats.reviewCount(), myReviewId, myStatus);
 		}
 
 	}

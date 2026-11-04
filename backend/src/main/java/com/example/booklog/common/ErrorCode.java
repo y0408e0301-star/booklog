@@ -58,6 +58,9 @@ public enum ErrorCode {
 	// S3 への保存に失敗した。入力した中身は画面に残す
 	PHOTO_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "投稿に失敗しました。時間をおいてもう一度お試しください。"),
 
+	// 読書ステータス・本棚（FN-08 9 章。M-28）
+	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "このユーザーは見つかりません。"),
+
 	// 画面を通さずに送られた、条件に合わない入力（JSON が読めない、上限を超えた文字数など）
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "入力が正しくありません。"),
 

@@ -157,7 +157,7 @@ function book(overrides: Partial<BookDetail> = {}): BookDetail {
   return {
     id: 56, title: '吾輩は猫である', authors: ['夏目漱石'], publisher: '新潮社', publishedDate: '2003-06-01',
     isbn13: '9784101010014', description: '猫の目から見た人間の話。', thumbnailUrl: 'https://books.google.com/a',
-    averageRating: null, reviewCount: 0, myReviewId: null, ...overrides,
+    averageRating: null, reviewCount: 0, myReviewId: null, myStatus: null, ...overrides,
   }
 }
 
@@ -185,6 +185,14 @@ describe('本のページ（G-5）', () => {
     expect(screen.getByText('猫の目から見た人間の話。')).toBeInTheDocument()
   })
 
+  // ST-1
+  it('自分の読書ステータスを押した状態で出す', async () => {
+    mockFetch({ 'GET /api/books/56': () => json(200, book({ myStatus: 'WANT' })), ...noReviews })
+    renderBookPage()
+    const group = await screen.findByRole('group', { name: '読書ステータス' })
+    expect(within(group).getByRole('button', { pressed: true })).toHaveTextContent('読みたい')
+  })
+
   // TC-10-3
   it('出版社・出版日・ISBN・紹介文・表紙がない本は、その行を出さず「表紙なし」を出す', async () => {
     mockFetch({
@@ -196,8 +204,8 @@ describe('本のページ（G-5）', () => {
     renderBookPage()
 
     const section = await screen.findByRole('region', { name: '吾輩は猫である' })
-    // 書名・平均評価（0 件なので「—」）・「レビューを書く」だけが出る
-    expect(section).toHaveTextContent(/^表紙なし吾輩は猫である—レビュー 0 件レビューを書く$/)
+    // 書名・平均評価（0 件なので「—」）・読書ステータス・「レビューを書く」だけが出る
+    expect(section).toHaveTextContent(/^表紙なし吾輩は猫である—レビュー 0 件読みたい読書中読了レビューを書く$/)
   })
 
   // TC-10-7

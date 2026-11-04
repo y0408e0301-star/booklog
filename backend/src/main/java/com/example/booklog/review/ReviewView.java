@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 
-import com.example.booklog.book.Book;
+import com.example.booklog.book.BookSummary;
 import com.example.booklog.user.User;
 
 // レビューを返すときの形（機能定義書 3.5 ReviewView）。spoiler が true でも body と photos は返す（伏せるのは画面。FN-03 5 章の 5）
@@ -29,19 +29,6 @@ public record ReviewView(long id, Author author, BookSummary book, int rating, S
 
 		static Author of(User user) {
 			return new Author(user.getUsername(), user.getDisplayName());
-		}
-
-	}
-
-	// 本（機能定義書 3.5 BookSummary）
-	public record BookSummary(long id, String title, List<String> authors, @Nullable String thumbnailUrl) {
-
-		public BookSummary {
-			authors = List.copyOf(authors);
-		}
-
-		static BookSummary of(Book book) {
-			return new BookSummary(book.getId(), book.getTitle(), book.getAuthors(), book.getThumbnailUrl());
 		}
 
 	}

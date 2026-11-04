@@ -176,8 +176,8 @@ export async function importBook(googleBooksId: string): Promise<number> {
 
 // ---------------------------------------------------------------- FN-10 本のページ
 
-// 本の詳細（FN-10 6 章）。averageRating はレビューが 0 件なら null、myReviewId はまだ書いていなければ null。
-// 自分の読書ステータス（1-7）は、その機能で足す
+// 本の詳細（FN-10 6 章）。averageRating はレビューが 0 件なら null、myReviewId はまだ書いていなければ null、
+// myStatus は自分の本棚になければ null
 export type BookDetail = Schemas['BookDetail']
 
 export function fetchBook(id: number): Promise<BookDetail> {
@@ -239,6 +239,21 @@ export async function refreshPhotoUrls(photoIds: number[]): Promise<ReviewPhoto[
   const res = await requestJson<Schemas['UrlsResponse']>('POST', '/api/photos/urls',
     { photoIds } satisfies Schemas['UrlsRequest'])
   return res.items
+}
+
+// ---------------------------------------------------------------- FN-08 読書ステータス・本棚
+
+// 読みたい・読書中・読了（FN-08 4 章）
+export type ReadingStatus = Schemas['StatusRequest']['status']
+
+// 付ける・変える（ST-2）。何回送っても同じ結果になる
+export async function setReadingStatus(bookId: number, status: ReadingStatus): Promise<void> {
+  await request('PUT', `/api/books/${bookId}/status`, { status } satisfies Schemas['StatusRequest'])
+}
+
+// 外す（ST-3）。レビューは消えない
+export async function removeReadingStatus(bookId: number): Promise<void> {
+  await request('DELETE', `/api/books/${bookId}/status`)
 }
 
 // ---------------------------------------------------------------- FN-09 タイムライン

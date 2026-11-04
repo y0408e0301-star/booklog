@@ -34,6 +34,7 @@ import com.example.booklog.TestEntities;
 import com.example.booklog.book.Book;
 import com.example.booklog.book.BookData;
 import com.example.booklog.book.BookRepository;
+import com.example.booklog.book.BookSummary;
 import com.example.booklog.common.ErrorCode;
 import com.example.booklog.shelf.ReadingStatuses;
 import com.example.booklog.storage.PhotoFormat;
@@ -102,7 +103,7 @@ class ReviewServiceTests {
 		assertThat(view.mine()).isTrue();
 		assertThat(view.createdAt()).isEqualTo(TestEntities.NOW);
 		assertThat(view.editedAt()).isNull();
-		assertThat(view.book()).isEqualTo(new ReviewView.BookSummary(56, "こころ", List.of("夏目漱石"), null));
+		assertThat(view.book()).isEqualTo(new BookSummary(56, "こころ", List.of("夏目漱石"), null));
 		verify(this.readingStatuses).addReadIfAbsent(1, 56);
 	}
 

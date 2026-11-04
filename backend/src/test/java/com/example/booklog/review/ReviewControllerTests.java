@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.example.booklog.ControllerTest;
+import com.example.booklog.book.BookSummary;
 import com.example.booklog.common.ApiException;
 import com.example.booklog.common.ErrorCode;
 
@@ -35,8 +36,8 @@ import com.example.booklog.common.ErrorCode;
 class ReviewControllerTests {
 
 	private static final ReviewView VIEW = new ReviewView(1234, new ReviewView.Author("taro_y", "たろう"),
-			new ReviewView.BookSummary(56, "こころ", List.of("夏目漱石"), null), 4, "面白かった", false, List.of(), 0, 0, false,
-			true, Instant.parse("2026-11-01T06:30:00Z"), null);
+			new BookSummary(56, "こころ", List.of("夏目漱石"), null), 4, "面白かった", false, List.of(), 0, 0, false, true,
+			Instant.parse("2026-11-01T06:30:00Z"), null);
 
 	@Autowired
 	MockMvcTester mvc;
