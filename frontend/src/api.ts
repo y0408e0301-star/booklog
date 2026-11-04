@@ -241,6 +241,20 @@ export async function refreshPhotoUrls(photoIds: number[]): Promise<ReviewPhoto[
   return res.items
 }
 
+// ---------------------------------------------------------------- FN-05 参考になった
+
+// 付ける・取り消すの結果。helpfulCount はほかの人の操作も含めた最新の数（FN-05 6 章）
+export type HelpfulResult = Schemas['HelpfulResult']
+
+// 付ける（H-1）・取り消す（H-2）。何回送っても同じ結果になる
+export function markHelpful(reviewId: number): Promise<HelpfulResult> {
+  return requestJson<HelpfulResult>('PUT', `/api/reviews/${reviewId}/helpful`)
+}
+
+export function unmarkHelpful(reviewId: number): Promise<HelpfulResult> {
+  return requestJson<HelpfulResult>('DELETE', `/api/reviews/${reviewId}/helpful`)
+}
+
 // ---------------------------------------------------------------- FN-08 読書ステータス・本棚
 
 // 読みたい・読書中・読了（FN-08 4 章）

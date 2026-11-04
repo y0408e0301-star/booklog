@@ -17,10 +17,10 @@ public record ReviewView(long id, Author author, BookSummary book, int rating, S
 		photos = List.copyOf(photos);
 	}
 
-	// 写真は ReviewViews がまとめて取って渡す。参考になった（1-8）・コメント（1-9）は、その機能を作るときに足す
-	static ReviewView of(Review review, long viewerId, List<Photo> photos) {
+	// 写真・参考になったは ReviewViews がまとめて取って渡す。コメント（1-9）は、その機能を作るときに足す
+	static ReviewView of(Review review, long viewerId, List<Photo> photos, long helpfulCount, boolean helpfulByMe) {
 		return new ReviewView(review.getId(), Author.of(review.getAuthor()), BookSummary.of(review.getBook()),
-				review.getRating(), review.getBody(), review.isSpoiler(), photos, 0, 0, false,
+				review.getRating(), review.getBody(), review.isSpoiler(), photos, helpfulCount, 0, helpfulByMe,
 				review.isWrittenBy(viewerId), review.getCreatedAt(), review.getEditedAt());
 	}
 
