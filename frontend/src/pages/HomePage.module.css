@@ -13,3 +13,7 @@
 .status p { margin: 0 0 12px; }
 .status p:last-child { margin-bottom: 0; }
 .empty p { margin: 0 0 12px; }
+/* G-10 ではタブをリンクで作る（URL の /following・/followers と合わせる） */
+a.tab { display: block; color: var(--sub); }
+a.tab:hover { text-decoration: none; }
+a.active { color: var(--text); }

@@ -12,6 +12,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.example.booklog.book.BookSummary;
+import com.example.booklog.common.TimeCursor;
 
 // 読書ステータス（reading_statuses。データ設計書 4.8）と本棚の一覧（FN-08）
 @Repository
@@ -55,7 +56,7 @@ public class ReadingStatuses {
 
 	// 本棚の一覧（ST-5）。updated_at の新しい順、同じなら本の ID の大きい順に、after より後ろを limit 冊。
 	// 星はその人がその本に書いたレビューのもの（なければ null）
-	List<ShelfItem> page(long userId, ReadingStatus status, @Nullable ShelfCursor after, int limit) {
+	List<ShelfItem> page(long userId, ReadingStatus status, @Nullable TimeCursor after, int limit) {
 		String sql = """
 				SELECT b.id, b.title, b.authors, b.thumbnail_url, s.status, s.updated_at, r.rating
 				FROM reading_statuses s
@@ -69,7 +70,7 @@ public class ReadingStatuses {
 		}
 		return this.jdbc.query(
 				sql + " AND (s.updated_at, s.book_id) < (?, ?) ORDER BY s.updated_at DESC, s.book_id DESC LIMIT ?",
-				ReadingStatuses::item, userId, status.name(), Timestamp.from(after.updatedAt()), after.bookId(), limit);
+				ReadingStatuses::item, userId, status.name(), Timestamp.from(after.at()), after.id(), limit);
 	}
 
 	private static ShelfItem item(ResultSet rs, int row) throws SQLException {

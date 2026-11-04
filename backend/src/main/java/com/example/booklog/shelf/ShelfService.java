@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.booklog.book.BookRepository;
 import com.example.booklog.common.ApiException;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.common.TimeCursor;
 import com.example.booklog.user.User;
 import com.example.booklog.user.UserRepository;
 
@@ -50,12 +51,17 @@ class ShelfService {
 	@Transactional(readOnly = true)
 	ShelfPage list(String username, @Nullable String status, @Nullable String cursor) {
 		ReadingStatus parsed = ReadingStatus.parse(status);
-		ShelfCursor after = ShelfCursor.parse(cursor);
+		TimeCursor after = TimeCursor.parse(cursor);
 		User user = this.users.findByUsername(username).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 		List<ReadingStatuses.ShelfItem> found = this.statuses.page(user.getId(), parsed, after, PAGE_SIZE + 1);
 		List<ReadingStatuses.ShelfItem> page = found.subList(0, Math.min(found.size(), PAGE_SIZE));
-		String next = (found.size() > PAGE_SIZE) ? ShelfCursor.after(page.getLast()).format() : null;
+		String next = (found.size() > PAGE_SIZE) ? cursorOf(page.getLast()).format() : null;
 		return new ShelfPage(page, next);
+	}
+
+	// 最後に出した行の日時と本の ID（FN-08 5 章の 5）
+	static TimeCursor cursorOf(ReadingStatuses.ShelfItem item) {
+		return new TimeCursor(item.updatedAt(), item.book().id());
 	}
 
 	private void requireBook(long bookId) {

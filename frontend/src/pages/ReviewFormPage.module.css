@@ -50,3 +50,6 @@
 
 /* G-7 でネタバレありのとき、コメントの見出し・フォーム・一覧の代わりに出す枠（画面設計書 9 章） */
 .commentsCover { padding: 0 16px 12px; }
+
+/* G-10 のユーザーの一覧 */
+.userList { list-style: none; margin: 0; padding: 0; }

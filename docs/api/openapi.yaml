@@ -33,6 +33,7 @@ info:
     | CANNOT_MARK_OWN_REVIEW | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
     | COMMENT_REQUIRED | 400 | コメントを入力してください。 |
     | COMMENT_NOT_FOUND | 404 | このコメントは削除されました。 |
+    | CANNOT_FOLLOW_SELF | 400 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
     | USER_NOT_FOUND | 404 | このユーザーは見つかりません。 |
     | BAD_REQUEST | 400 | 入力が正しくありません。 |
     | FORBIDDEN | 403 | 操作に失敗しました。時間をおいてもう一度お試しください。 |
@@ -879,6 +880,145 @@ paths:
       summary: 本棚の一覧
       tags:
       - FN-08 読書ステータス・本棚
+  /api/users/{username}/follow:
+    delete:
+      description: 何回送っても同じ結果になる
+      operationId: unfollow
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowResult"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: フォローを解除する
+      tags:
+      - FN-07 フォロー
+    put:
+      description: 何回送っても同じ結果になる。自分はフォローできない（400）
+      operationId: follow
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowResult"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: フォローする
+      tags:
+      - FN-07 フォロー
+  /api/users/{username}/followers:
+    get:
+      description: 新しくフォローされた順に 20 件ずつ
+      operationId: listFollowers
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      - description: 前回の nextCursor。最初は省く
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPage"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: フォロワーの一覧
+      tags:
+      - FN-07 フォロー
+  /api/users/{username}/following:
+    get:
+      description: 新しくフォローした順に 20 件ずつ
+      operationId: listFollowing
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      - description: 前回の nextCursor。最初は省く
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPage"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: フォロー中の一覧
+      tags:
+      - FN-07 フォロー
 components:
   schemas:
     Author:
@@ -1111,6 +1251,17 @@ components:
       - code
       - field
       - message
+    FollowResult:
+      type: object
+      properties:
+        followerCount:
+          type: integer
+          format: int64
+        following:
+          type: boolean
+      required:
+      - followerCount
+      - following
     HelpfulResult:
       type: object
       properties:
@@ -1360,6 +1511,39 @@ components:
             $ref: "#/components/schemas/Photo"
       required:
       - items
+    UserPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserSummary"
+        nextCursor:
+          type:
+          - string
+          - "null"
+      required:
+      - items
+      - nextCursor
+    UserSummary:
+      type: object
+      properties:
+        bioFirstLine:
+          type: string
+        displayName:
+          type: string
+        followedByMe:
+          type: boolean
+        me:
+          type: boolean
+        username:
+          type: string
+      required:
+      - bioFirstLine
+      - displayName
+      - followedByMe
+      - me
+      - username
     UsernameAvailability:
       type: object
       properties:

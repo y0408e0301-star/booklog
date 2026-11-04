@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 import { ToastProvider } from './components/ToastProvider'
 import BookPage from './pages/BookPage'
 import BookSearchPage from './pages/BookSearchPage'
+import FollowListPage from './pages/FollowListPage'
 import HomePage from './pages/HomePage'
 import ReviewFormPage from './pages/ReviewFormPage'
 import ReviewPage from './pages/ReviewPage'
@@ -30,6 +31,8 @@ export default function App() {
               <Route path="/books/:id" element={<BookPage />} />
               <Route path="/books/:id/review" element={<ReviewFormPage />} />
               <Route path="/reviews/:id" element={<ReviewPage />} />
+              <Route path="/users/:username/following" element={<FollowListPage kind="following" />} />
+              <Route path="/users/:username/followers" element={<FollowListPage kind="followers" />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -66,7 +66,10 @@ public enum ErrorCode {
 
 	COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "このコメントは削除されました。"),
 
-	// 読書ステータス・本棚（FN-08 9 章。M-28）
+	// フォロー（FN-07 9 章）。画面を通さずに自分をフォローしようとした。画面には M-30 を出す
+	CANNOT_FOLLOW_SELF(HttpStatus.BAD_REQUEST, "操作に失敗しました。時間をおいてもう一度お試しください。"),
+
+	// 読書ステータス・本棚（FN-08 9 章）、フォロー（FN-07 9 章）。M-28
 	USER_NOT_FOUND(HttpStatus.NOT_FOUND, "このユーザーは見つかりません。"),
 
 	// 画面を通さずに送られた、条件に合わない入力（JSON が読めない、上限を超えた文字数など）

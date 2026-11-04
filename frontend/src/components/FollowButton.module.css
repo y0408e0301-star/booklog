@@ -1,0 +1,6 @@
+/* 画面設計書 2.3 「フォロー中」は、マウスを乗せている間だけ文字を「フォロー解除」、枠線と文字を危険色にする（F-2） */
+.following { position: relative; }
+.hoverLabel { display: none; }
+.following:hover { color: var(--danger); border-color: var(--danger); }
+.following:hover .label { visibility: hidden; }
+.following:hover .hoverLabel { display: inline; position: absolute; }

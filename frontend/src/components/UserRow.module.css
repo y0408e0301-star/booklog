@@ -1,0 +1,12 @@
+/* 画面設計書 2.11 ユーザーの行 */
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.avatar { display: inline-flex; align-self: flex-start; border-radius: 50%; }
+.main { flex: 1; min-width: 0; }
+/* 表示名・@ユーザー ID が長いときは末尾を「…」で省く（レビューのカードと同じ） */
+.names { display: flex; gap: 4px; min-width: 0; overflow: hidden; white-space: nowrap; color: inherit; }
+.names:hover { text-decoration: none; }
+.names:hover .name { text-decoration: underline; }
+.name { font-weight: bold; font-size: 15px; overflow: hidden; text-overflow: ellipsis; }
+.username { color: var(--sub); overflow: hidden; text-overflow: ellipsis; }
+/* 自己紹介の 1 行目（補足文字） */
+.bio { margin: 2px 0 0; color: var(--sub); overflow-wrap: anywhere; }

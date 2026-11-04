@@ -9,8 +9,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
-// フォロー（データ設計書 4.7）。タイムラインの「フォロー中」（FN-09 T-1）で使う。
-// フォローする・解除する操作（FN-07）は開発計画書 1-10 で足す
+// フォロー（データ設計書 4.7）。タイムラインの「フォロー中」（FN-09 T-1）とフォロー（FN-07）で使う。
+// 追加は FollowRepository.insertIfAbsent で行う
 @Entity
 @Table(name = "follows")
 @IdClass(Follow.Key.class)

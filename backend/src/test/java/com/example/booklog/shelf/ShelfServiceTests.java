@@ -21,6 +21,7 @@ import com.example.booklog.TestEntities;
 import com.example.booklog.book.BookRepository;
 import com.example.booklog.book.BookSummary;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.common.TimeCursor;
 import com.example.booklog.user.UserRepository;
 
 // 読書ステータスの付け外しと本棚の一覧の処理の順番とエラー（FN-08）
@@ -82,13 +83,13 @@ class ShelfServiceTests {
 
 		ShelfService.ShelfPage page = this.service.list("taro_y", "READ", null);
 		assertThat(page.items()).hasSize(20).isEqualTo(found.subList(0, 20));
-		assertThat(page.nextCursor()).isEqualTo(ShelfCursor.after(found.get(19)).format());
+		assertThat(page.nextCursor()).isEqualTo(ShelfService.cursorOf(found.get(19)).format());
 	}
 
 	@Test
 	void 最後まで読めば続きの位置はnull() {
 		when(this.users.findByUsername("taro_y")).thenReturn(Optional.of(TestEntities.user(1, "taro_y")));
-		ShelfCursor after = new ShelfCursor(Instant.parse("2026-10-24T03:00:00Z"), 5);
+		TimeCursor after = new TimeCursor(Instant.parse("2026-10-24T03:00:00Z"), 5);
 		when(this.statuses.page(1, ReadingStatus.WANT, after, 21)).thenReturn(List.of(item(4)));
 
 		ShelfService.ShelfPage page = this.service.list("taro_y", "WANT", after.format());
