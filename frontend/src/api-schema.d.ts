@@ -173,7 +173,7 @@ export interface paths {
         put?: never;
         /**
          * レビューを投稿する
-         * @description 1 人 1 冊に 1 つ（もうあれば 409）。その本が本棚になければ「読了」で入れる
+         * @description 1 人 1 冊に 1 つ（もうあれば 409）。その本が本棚になければ「読了」で入れる。写真は S3 に置いてから保存する
          */
         post: operations["createReview"];
         delete?: never;
@@ -202,6 +202,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/photos/urls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 写真の署名付き URL を取り直す
+         * @description 削除された写真は結果に入らない
+         */
+        post: operations["refreshPhotoUrls"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reviews/{id}": {
         parameters: {
             query?: never;
@@ -222,7 +242,7 @@ export interface paths {
         head?: never;
         /**
          * レビューを編集する
-         * @description 自分のレビューだけ。投稿日時・並び順・参考になった・コメントは変わらない
+         * @description 自分のレビューだけ。投稿日時・並び順・参考になった・コメントは変わらない。keepPhotoIds にない写真は外して S3 から消す
          */
         patch: operations["editReview"];
         trace?: never;
@@ -292,6 +312,21 @@ export interface components {
             thumbnailUrl: string | null;
             title: string;
         };
+        EditReviewForm: {
+            /** @description 感想。改行を LF にそろえ、前後の空白を除いて 1〜2,000 文字（RV-4） */
+            body: string;
+            /** @description 残す写真の ID（このレビューの写真だけ）。ない写真は外す（PH-4） */
+            keepPhotoIds?: number[];
+            /** @description 足す写真。残す写真と合わせて 4 枚まで（PH-2） */
+            photos?: string[];
+            /**
+             * Format: int32
+             * @description 星。1〜5 の整数（RV-3）
+             */
+            rating: number;
+            /** @description ネタバレあり。省いたら false（RV-11） */
+            spoiler?: boolean;
+        };
         ErrorResponse: {
             code: string;
             field: string | null;
@@ -323,6 +358,8 @@ export interface components {
         ReviewForm: {
             /** @description 感想。改行を LF にそろえ、前後の空白を除いて 1〜2,000 文字（RV-4） */
             body: string;
+            /** @description 写真。0〜4 枚を選んだ順に。1 枚 5MB まで、JPEG・PNG・WebP（PH-1〜PH-3） */
+            photos?: string[];
             /**
              * Format: int32
              * @description 星。1〜5 の整数（RV-3）
@@ -363,6 +400,13 @@ export interface components {
             password: string;
             /** @description 前後の空白を除いて 3〜15 文字の半角英数字と「_」（A-2） */
             username: string;
+        };
+        UrlsRequest: {
+            /** @description 写真の ID。50 個まで */
+            photoIds: number[];
+        };
+        UrlsResponse: {
+            items: components["schemas"]["Photo"][];
         };
         UsernameAvailability: {
             available: boolean;
@@ -837,6 +881,48 @@ export interface operations {
             };
         };
     };
+    refreshPhotoUrls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UrlsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UrlsResponse"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getReview: {
         parameters: {
             query?: never;
@@ -926,7 +1012,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "multipart/form-data": components["schemas"]["ReviewForm"];
+                "multipart/form-data": components["schemas"]["EditReviewForm"];
             };
         };
         responses: {

@@ -5,10 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.LongStream;
@@ -16,10 +21,14 @@ import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Limit;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.booklog.TestEntities;
 import com.example.booklog.book.Book;
@@ -27,10 +36,16 @@ import com.example.booklog.book.BookData;
 import com.example.booklog.book.BookRepository;
 import com.example.booklog.common.ErrorCode;
 import com.example.booklog.shelf.ReadingStatuses;
+import com.example.booklog.storage.PhotoFormat;
+import com.example.booklog.storage.PhotoStorage;
+import com.example.booklog.storage.StorageDeleter;
 import com.example.booklog.user.User;
 import com.example.booklog.user.UserRepository;
 
-// レビューの投稿・表示・編集・削除（FN-03）と本のレビューの一覧（BK-5）の処理を、データベースを使わずに確かめる
+import software.amazon.awssdk.core.exception.SdkClientException;
+
+// レビューの投稿・表示・編集・削除（FN-03）と写真（FN-04）、本のレビューの一覧（BK-5）の処理を、
+// データベースと S3 を使わずに確かめる
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTests {
 
@@ -48,6 +63,15 @@ class ReviewServiceTests {
 	@Mock
 	ReadingStatuses readingStatuses;
 
+	@Mock
+	ReviewPhotoRepository photos;
+
+	@Mock
+	PhotoStorage storage;
+
+	@Mock
+	StorageDeleter deleter;
+
 	private ReviewService service;
 
 	private final User taro = TestEntities.user(1, "taro_y");
@@ -59,8 +83,10 @@ class ReviewServiceTests {
 
 	@BeforeEach
 	void setUp() {
-		this.service = new ReviewService(this.reviews, this.books, this.users, this.readingStatuses,
-				TestEntities.fixedClock());
+		// ReviewViews は本物を使い、写真の行と S3 だけを偽物にする
+		this.service = new ReviewService(this.reviews, this.photos, this.books, this.users, this.readingStatuses,
+				new ReviewViews(this.photos, this.storage), this.storage, this.deleter,
+				TestEntities.immediateTransaction(), TestEntities.fixedClock());
 	}
 
 	@Test
@@ -69,7 +95,7 @@ class ReviewServiceTests {
 		when(this.books.findById(56L)).thenReturn(Optional.of(this.book));
 		when(this.reviews.saveAndFlush(any())).thenAnswer((call) -> TestEntities.withId(call.getArgument(0), 1234));
 
-		ReviewView view = this.service.create(1, 56, INPUT);
+		ReviewView view = this.service.create(1, 56, INPUT, List.of());
 
 		assertThat(view.id()).isEqualTo(1234);
 		assertThat(view.rating()).isEqualTo(4);
@@ -87,7 +113,7 @@ class ReviewServiceTests {
 		when(this.books.findById(56L)).thenReturn(Optional.of(this.book));
 		when(this.reviews.existsByAuthorAndBook(1, 56)).thenReturn(true);
 
-		assertApiError(() -> this.service.create(1, 56, INPUT), ErrorCode.REVIEW_EXISTS);
+		assertApiError(() -> this.service.create(1, 56, INPUT, List.of()), ErrorCode.REVIEW_EXISTS);
 		verify(this.reviews, never()).saveAndFlush(any());
 		verify(this.readingStatuses, never()).addReadIfAbsent(anyLong(), anyLong());
 	}
@@ -99,7 +125,7 @@ class ReviewServiceTests {
 		when(this.books.findById(56L)).thenReturn(Optional.of(this.book));
 		when(this.reviews.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
 
-		assertApiError(() -> this.service.create(1, 56, INPUT), ErrorCode.REVIEW_EXISTS);
+		assertApiError(() -> this.service.create(1, 56, INPUT, List.of()), ErrorCode.REVIEW_EXISTS);
 		verify(this.readingStatuses, never()).addReadIfAbsent(anyLong(), anyLong());
 	}
 
@@ -107,13 +133,13 @@ class ReviewServiceTests {
 	void ない本には書けない() {
 		when(this.users.findById(1L)).thenReturn(Optional.of(this.taro));
 		when(this.books.findById(999L)).thenReturn(Optional.empty());
-		assertApiError(() -> this.service.create(1, 999, INPUT), ErrorCode.BOOK_NOT_FOUND);
+		assertApiError(() -> this.service.create(1, 999, INPUT, List.of()), ErrorCode.BOOK_NOT_FOUND);
 	}
 
 	@Test
 	void 退会した人のJWTでは書けない() {
 		when(this.users.findById(9L)).thenReturn(Optional.empty());
-		assertApiError(() -> this.service.create(9, 56, INPUT), ErrorCode.UNAUTHENTICATED);
+		assertApiError(() -> this.service.create(9, 56, INPUT, List.of()), ErrorCode.UNAUTHENTICATED);
 	}
 
 	@Test
@@ -121,7 +147,7 @@ class ReviewServiceTests {
 		Review review = review(1234, this.taro);
 		when(this.reviews.findWithAuthorAndBookById(1234)).thenReturn(Optional.of(review));
 
-		ReviewView view = this.service.edit(1, 1234, new ReviewInput(2, "読み直した", true));
+		ReviewView view = this.service.edit(1, 1234, new ReviewInput(2, "読み直した", true), null, List.of());
 
 		assertThat(view.rating()).isEqualTo(2);
 		assertThat(view.body()).isEqualTo("読み直した");
@@ -135,17 +161,174 @@ class ReviewServiceTests {
 	void 他人のレビューは編集も削除もできない() {
 		when(this.reviews.findWithAuthorAndBookById(1234)).thenReturn(Optional.of(review(1234, this.hanako)));
 
-		assertApiError(() -> this.service.edit(1, 1234, INPUT), ErrorCode.FORBIDDEN);
+		assertApiError(() -> this.service.edit(1, 1234, INPUT, null, List.of()), ErrorCode.FORBIDDEN);
 		assertApiError(() -> this.service.delete(1, 1234), ErrorCode.FORBIDDEN);
 		verify(this.reviews, never()).delete(any());
 	}
 
 	@Test
-	void 自分のレビューを削除する() {
+	void 自分のレビューを削除し写真は後でS3から消す() {
 		Review review = review(1234, this.taro);
 		when(this.reviews.findWithAuthorAndBookById(1234)).thenReturn(Optional.of(review));
+		when(this.photos.findStorageKeysByReviewId(1234)).thenReturn(List.of("reviews/a.png"));
 		this.service.delete(1, 1234);
-		verify(this.reviews).delete(review);
+		InOrder order = inOrder(this.reviews, this.deleter);
+		order.verify(this.reviews).delete(review);
+		order.verify(this.deleter).deleteOrRecord(List.of("reviews/a.png"));
+	}
+
+	// ---- 写真（FN-04）----
+
+	@Test
+	void 写真をS3に置いてから行を保存し選んだ順に並べる() {
+		when(this.users.findById(1L)).thenReturn(Optional.of(this.taro));
+		when(this.books.findById(56L)).thenReturn(Optional.of(this.book));
+		when(this.reviews.saveAndFlush(any())).thenAnswer((call) -> TestEntities.withId(call.getArgument(0), 1234));
+
+		this.service.create(1, 56, INPUT, List.of(file(PNG), file(JPEG)));
+
+		ArgumentCaptor<String> keys = ArgumentCaptor.forClass(String.class);
+		InOrder order = inOrder(this.storage, this.reviews);
+		order.verify(this.storage).put(keys.capture(), eq(PhotoFormat.PNG), any());
+		order.verify(this.storage).put(keys.capture(), eq(PhotoFormat.JPEG), any());
+		order.verify(this.reviews).saveAndFlush(any());
+		ArgumentCaptor<ReviewPhoto> saved = ArgumentCaptor.forClass(ReviewPhoto.class);
+		verify(this.photos, times(2)).save(saved.capture());
+		assertThat(saved.getAllValues()).extracting(ReviewPhoto::getStorageKey).isEqualTo(keys.getAllValues());
+		assertThat(saved.getAllValues()).extracting(ReviewPhoto::getSortOrder).containsExactly(0, 1);
+		assertThat(saved.getAllValues()).extracting(ReviewPhoto::getContentType)
+			.containsExactly("image/png", "image/jpeg");
+		assertThat(keys.getValue()).matches("reviews/[0-9a-f-]{36}[.]jpg");
+		verify(this.deleter, never()).deleteOrRecord(any());
+	}
+
+	// TC-04-1
+	@Test
+	void 五枚以上はTOO_MANY_PHOTOSで何も置かない() {
+		List<MultipartFile> five = List.of(file(PNG), file(PNG), file(PNG), file(PNG), file(PNG));
+		assertApiError(() -> this.service.create(1, 56, INPUT, five), ErrorCode.TOO_MANY_PHOTOS, "photos");
+		verifyNoInteractions(this.storage, this.reviews);
+	}
+
+	// TC-04-2
+	@Test
+	void 五MBちょうどは添えられ一バイト超えるとPHOTO_TOO_LARGE() {
+		byte[] large = withHeader((int) ReviewService.PHOTO_BYTES_MAX + 1);
+		assertApiError(() -> this.service.create(1, 56, INPUT, List.of(file(large))), ErrorCode.PHOTO_TOO_LARGE,
+				"photos");
+
+		byte[] exact = withHeader((int) ReviewService.PHOTO_BYTES_MAX);
+		when(this.users.findById(1L)).thenReturn(Optional.of(this.taro));
+		when(this.books.findById(56L)).thenReturn(Optional.of(this.book));
+		when(this.reviews.saveAndFlush(any())).thenAnswer((call) -> TestEntities.withId(call.getArgument(0), 1234));
+		this.service.create(1, 56, INPUT, List.of(file(exact)));
+		verify(this.storage).put(any(), eq(PhotoFormat.PNG), eq(exact));
+	}
+
+	// TC-04-3：拡張子ではなく中身で決める
+	@Test
+	void 写真でないファイルはPHOTO_TYPE_INVALID() {
+		MockMultipartFile text = new MockMultipartFile("photos", "photo.jpg", "image/jpeg",
+				"テキスト".getBytes(StandardCharsets.UTF_8));
+		assertApiError(() -> this.service.create(1, 56, INPUT, List.of(text)), ErrorCode.PHOTO_TYPE_INVALID, "photos");
+		verifyNoInteractions(this.storage);
+	}
+
+	// TC-04-4
+	@Test
+	void S3への保存が途中で失敗したら置いた写真を消してPHOTO_UPLOAD_FAILED() {
+		when(this.users.findById(1L)).thenReturn(Optional.of(this.taro));
+		when(this.books.findById(56L)).thenReturn(Optional.of(this.book));
+		doNothing().doThrow(SdkClientException.create("S3 につながらない")).when(this.storage).put(any(), any(), any());
+
+		assertApiError(() -> this.service.create(1, 56, INPUT, List.of(file(PNG), file(PNG))),
+				ErrorCode.PHOTO_UPLOAD_FAILED);
+		ArgumentCaptor<List<String>> deleted = listCaptor();
+		verify(this.deleter).deleteOrRecord(deleted.capture());
+		assertThat(deleted.getValue()).hasSize(1);
+		verify(this.reviews, never()).saveAndFlush(any());
+	}
+
+	// TC-04-4：データベースへの保存に失敗したときも、置いた写真を消す
+	@Test
+	void 行の保存に失敗したら置いた写真を消す() {
+		when(this.users.findById(1L)).thenReturn(Optional.of(this.taro));
+		when(this.books.findById(56L)).thenReturn(Optional.of(this.book));
+		when(this.reviews.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+		assertApiError(() -> this.service.create(1, 56, INPUT, List.of(file(PNG))), ErrorCode.REVIEW_EXISTS);
+		ArgumentCaptor<List<String>> deleted = listCaptor();
+		verify(this.deleter).deleteOrRecord(deleted.capture());
+		assertThat(deleted.getValue()).hasSize(1).allMatch((key) -> key.startsWith("reviews/"));
+	}
+
+	// TC-04-5（FN-04 5 章の 5）
+	@Test
+	void 編集では残した写真を前の順のまま前に足した写真を後ろに並べ外した写真はコミットの後で消す() {
+		Review review = review(1234, this.taro);
+		when(this.reviews.findWithAuthorAndBookById(1234)).thenReturn(Optional.of(review));
+		ReviewPhoto first = photo(10, 0, "reviews/first.png");
+		ReviewPhoto second = photo(11, 1, "reviews/second.png");
+		ReviewPhoto third = photo(12, 2, "reviews/third.png");
+		when(this.photos.findByReviewIdOrderBySortOrderAsc(1234)).thenReturn(List.of(first, second, third));
+
+		// 3 枚のうち 1 枚目を外し、3 枚目・2 枚目の順に「残す」と送っても、前の順のまま並べる
+		this.service.edit(1, 1234, INPUT, List.of(12L, 11L), List.of(file(PNG)));
+
+		verify(this.photos).delete(first);
+		assertThat(second.getSortOrder()).isZero();
+		assertThat(third.getSortOrder()).isEqualTo(1);
+		ArgumentCaptor<ReviewPhoto> added = ArgumentCaptor.forClass(ReviewPhoto.class);
+		verify(this.photos).save(added.capture());
+		assertThat(added.getValue().getSortOrder()).isEqualTo(2);
+		verify(this.deleter).deleteOrRecord(List.of("reviews/first.png"));
+	}
+
+	// TC-04-1：3 枚のレビューに 2 枚足そうとすると 5 枚になる
+	@Test
+	void 残す写真と足す写真で五枚以上ならTOO_MANY_PHOTOS() {
+		when(this.reviews.findWithAuthorAndBookById(1234)).thenReturn(Optional.of(review(1234, this.taro)));
+		when(this.photos.findByReviewIdOrderBySortOrderAsc(1234))
+			.thenReturn(List.of(photo(10, 0, "a"), photo(11, 1, "b"), photo(12, 2, "c")));
+		assertApiError(() -> this.service.edit(1, 1234, INPUT, List.of(10L, 11L, 12L), List.of(file(PNG), file(PNG))),
+				ErrorCode.TOO_MANY_PHOTOS, "photos");
+		verifyNoInteractions(this.storage);
+	}
+
+	// TC-04-9
+	@Test
+	void ほかのレビューの写真のIDを残すと400() {
+		when(this.reviews.findWithAuthorAndBookById(1234)).thenReturn(Optional.of(review(1234, this.taro)));
+		when(this.photos.findByReviewIdOrderBySortOrderAsc(1234)).thenReturn(List.of(photo(10, 0, "a")));
+		assertApiError(() -> this.service.edit(1, 1234, INPUT, List.of(99L), List.of()), ErrorCode.BAD_REQUEST,
+				"keepPhotoIds");
+		assertApiError(() -> this.service.edit(1, 1234, INPUT, List.of(10L, 10L), List.of()), ErrorCode.BAD_REQUEST,
+				"keepPhotoIds");
+	}
+
+	// 先頭のバイト：PNG と JPEG（FN-04 4 章）
+	private static final byte[] PNG = { (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 1 };
+
+	private static final byte[] JPEG = { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 1 };
+
+	// PNG の先頭のバイトを持つ、size バイトのファイル
+	private static byte[] withHeader(int size) {
+		byte[] data = new byte[size];
+		System.arraycopy(PNG, 0, data, 0, PNG.length);
+		return data;
+	}
+
+	private static MultipartFile file(byte[] data) {
+		return new MockMultipartFile("photos", "photo", null, data);
+	}
+
+	private static ReviewPhoto photo(long id, int sortOrder, String key) {
+		return TestEntities.withId(new ReviewPhoto(1234, key, "image/png", 10, sortOrder), id);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static ArgumentCaptor<List<String>> listCaptor() {
+		return ArgumentCaptor.forClass(List.class);
 	}
 
 	// TC-03-12
@@ -153,7 +336,7 @@ class ReviewServiceTests {
 	void 削除されたレビューはM20() {
 		when(this.reviews.findWithAuthorAndBookById(1234)).thenReturn(Optional.empty());
 		assertApiError(() -> this.service.get(1, 1234), ErrorCode.REVIEW_NOT_FOUND);
-		assertApiError(() -> this.service.edit(1, 1234, INPUT), ErrorCode.REVIEW_NOT_FOUND);
+		assertApiError(() -> this.service.edit(1, 1234, INPUT, null, List.of()), ErrorCode.REVIEW_NOT_FOUND);
 		assertApiError(() -> this.service.delete(1, 1234), ErrorCode.REVIEW_NOT_FOUND);
 	}
 

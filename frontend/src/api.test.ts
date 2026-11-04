@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ApiError, bookSearchUrl, bookUrl, createReview, deleteReview, editReview, ensureOk, fetchBook, fetchBookReviews, fetchMe,
-  fetchReview, importBook, isUsernameAvailable, login, logout, profileUrl, reviewFormUrl, reviewUrl, searchBooks,
+  fetchReview, importBook, isUsernameAvailable, login, logout, profileUrl, refreshPhotoUrls, reviewFormUrl, reviewUrl, searchBooks,
   setSessionExpiredHandler, signup,
 } from './api'
 import { M } from './messages'
@@ -128,11 +128,31 @@ describe('API の呼び出し方', () => {
       'POST /api/books/56/reviews': () => json(201, {}),
       'PATCH /api/reviews/7': () => json(200, {}),
     })
-    await createReview(56, { rating: 4, body: '面白い', spoiler: false })
-    await editReview(7, { rating: 2, body: '読み直した', spoiler: true })
+    await createReview(56, { rating: 4, body: '面白い', spoiler: false, photos: [] })
+    await editReview(7, { rating: 2, body: '読み直した', spoiler: true, photos: [] }, [])
     expect(Object.fromEntries(sentForm(fetch, 0))).toEqual({ rating: '4', body: '面白い', spoiler: 'false' })
     expect(Object.fromEntries(sentForm(fetch, 1))).toEqual({ rating: '2', body: '読み直した', spoiler: 'true' })
     expect(fetch.calls[0].init?.headers).not.toHaveProperty('Content-Type')
+  })
+
+  it('写真は photos に選んだ順で、編集で残す写真は keepPhotoIds で送る（FN-04 6 章）', async () => {
+    const fetch = mockFetch({
+      'POST /api/books/56/reviews': () => json(201, {}),
+      'PATCH /api/reviews/7': () => json(200, {}),
+    })
+    const [a, b] = [new File(['a'], 'a.jpg', { type: 'image/jpeg' }), new File(['b'], 'b.png', { type: 'image/png' })]
+    await createReview(56, { rating: 4, body: '面白い', spoiler: false, photos: [a, b] })
+    await editReview(7, { rating: 4, body: '面白い', spoiler: false, photos: [b] }, [77, 78])
+    expect(sentForm(fetch, 0).getAll('photos').map((f) => (f as File).name)).toEqual(['a.jpg', 'b.png'])
+    expect(sentForm(fetch, 1).getAll('photos').map((f) => (f as File).name)).toEqual(['b.png'])
+    expect(sentForm(fetch, 1).getAll('keepPhotoIds')).toEqual(['77', '78'])
+  })
+
+  it('写真の URL の取り直しは ID を JSON で送り、items を返す', async () => {
+    const items = [{ id: 77, url: 'https://s3/77.jpg', expiresAt: '2026-11-04T00:15:00Z' }]
+    const fetch = mockFetch({ 'POST /api/photos/urls': () => json(200, { items }) })
+    await expect(refreshPhotoUrls([77, 78])).resolves.toEqual(items)
+    expect(sentJson(fetch)).toEqual({ photoIds: [77, 78] })
   })
 
   it('レビューの詳細・削除と、本のレビューの一覧（続きは cursor）', async () => {

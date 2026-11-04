@@ -7,6 +7,7 @@ import Avatar from './Avatar'
 import BookCover from './BookCover'
 import ConfirmDialog from './ConfirmDialog'
 import styles from './ReviewCard.module.css'
+import ReviewPhotos from './ReviewPhotos'
 import Stars from './Stars'
 import { useToast } from './ToastContext'
 import ui from './ui.module.css'
@@ -22,7 +23,7 @@ type Props = {
 }
 
 // レビューのカード（画面設計書 2.7。G-3・G-5・G-7・G-8 で共通）。
-// 写真（1-6）・「参考になった」のボタン（1-8）は、その機能を作るときに足す
+// 「参考になった」のボタン（1-8）は、その機能を作るときに足す
 export default function ReviewCard({ review, showBook, detail = false, onDelete }: Props) {
   const navigate = useNavigate()
   const toast = useToast()
@@ -85,7 +86,12 @@ export default function ReviewCard({ review, showBook, detail = false, onDelete 
         <div className={styles.rating}><Stars value={review.rating} size={16} /></div>
         {hidden
           ? <SpoilerCover onReveal={() => setRevealed(true)} />
-          : <ReviewBody review={review} detail={detail} focusOnMount={revealed} />}
+          : (
+            <>
+              <ReviewBody review={review} detail={detail} focusOnMount={revealed} />
+              <ReviewPhotos photos={review.photos} />
+            </>
+          )}
         <div className={styles.actions}>
           {/* 「参考になった」のボタンは 1-8 で作る。それまでは数だけを出す */}
           <span className={styles.action} aria-label={`参考になった ${review.helpfulCount} 件`}>👍 {review.helpfulCount}</span>

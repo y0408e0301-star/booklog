@@ -48,6 +48,16 @@ public enum ErrorCode {
 
 	REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "このレビューは削除されました。"),
 
+	// 写真（FN-04 9 章。M-21〜M-23）
+	TOO_MANY_PHOTOS(HttpStatus.BAD_REQUEST, "写真は 1 つのレビューに 4 枚までです。"),
+
+	PHOTO_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "添えられるのは 5MB までの JPEG・PNG・WebP の画像です。"),
+
+	PHOTO_TYPE_INVALID(HttpStatus.BAD_REQUEST, "添えられるのは 5MB までの JPEG・PNG・WebP の画像です。"),
+
+	// S3 への保存に失敗した。入力した中身は画面に残す
+	PHOTO_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "投稿に失敗しました。時間をおいてもう一度お試しください。"),
+
 	// 画面を通さずに送られた、条件に合わない入力（JSON が読めない、上限を超えた文字数など）
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "入力が正しくありません。"),
 

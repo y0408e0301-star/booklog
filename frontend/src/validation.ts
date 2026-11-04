@@ -44,3 +44,25 @@ export function normalizeBody(body: string): string {
 export function remainingReviewChars(body: string): number {
   return REVIEW_BODY_MAX - countChars(normalizeBody(body))
 }
+
+// ---- 写真（FN-04 PH-1〜PH-3）
+
+export const PHOTOS_MAX = 4
+export const PHOTO_BYTES_MAX = 5 * 1024 * 1024
+export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const PHOTO_EXTENSIONS = /\.(jpe?g|png|webp)$/i
+
+// 画面では拡張子と File.type で確かめる。ファイルの中身（先頭のバイト）は API が確かめる
+export function isAcceptablePhoto(file: File): boolean {
+  return file.size <= PHOTO_BYTES_MAX && PHOTO_TYPES.includes(file.type) && PHOTO_EXTENSIONS.test(file.name)
+}
+
+// 選んだ写真を今の写真の後ろに足す。current は編集で残す写真の数（kept）も含めて数える。
+// 添えられない写真は外し（M-23）、合わせて 5 枚以上なら先に選んだものから 4 枚までにする（M-22）
+export function addPhotos(current: File[], picked: File[], kept = 0): { photos: File[], error: 'M22' | 'M23' | null } {
+  const acceptable = picked.filter(isAcceptablePhoto)
+  const all = [...current, ...acceptable]
+  const room = PHOTOS_MAX - kept
+  if (all.length > room) return { photos: all.slice(0, Math.max(room, 0)), error: 'M22' }
+  return { photos: all, error: acceptable.length < picked.length ? 'M23' : null }
+}
