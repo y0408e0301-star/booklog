@@ -5,6 +5,7 @@ import static com.example.booklog.ControllerTestSupport.loggedIn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -19,8 +20,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.example.booklog.ControllerTest;
 import com.example.booklog.common.ApiException;
@@ -43,7 +46,7 @@ class ReviewControllerTests {
 
 	@Test
 	void 投稿はmultipartで受け取り201でReviewViewを返す() {
-		when(this.reviewService.create(1, 56, new ReviewInput(4, "面白かった", true))).thenReturn(VIEW);
+		when(this.reviewService.create(1, 56, new ReviewInput(4, "面白かった", true), List.of())).thenReturn(VIEW);
 
 		assertThat(this.mvc.post()
 			.uri("/api/books/56/reviews")
@@ -98,7 +101,7 @@ class ReviewControllerTests {
 
 	@Test
 	void 同じ本のレビューがあれば409() {
-		when(this.reviewService.create(anyLong(), anyLong(), any()))
+		when(this.reviewService.create(anyLong(), anyLong(), any(), any()))
 			.thenThrow(new ApiException(ErrorCode.REVIEW_EXISTS));
 		assertError(this.mvc.post()
 			.uri("/api/books/56/reviews")
@@ -110,9 +113,39 @@ class ReviewControllerTests {
 			.exchange(), ErrorCode.REVIEW_EXISTS);
 	}
 
+	// FN-04：写真はファイルの項目 photos、残す写真は keepPhotoIds で受け取る
+	@Test
+	void 写真と残す写真のIDを受け取る() {
+		MockMultipartFile photo = new MockMultipartFile("photos", "a.png", "image/png", new byte[] { 1 });
+		when(this.reviewService.edit(eq(1L), eq(1234L), eq(new ReviewInput(2, "読み直した", false)), eq(List.of(10L, 11L)),
+				any()))
+			.thenReturn(VIEW);
+		assertThat(this.mvc.perform(multipart(HttpMethod.PATCH, "/api/reviews/1234").file(photo)
+			.param("rating", "2")
+			.param("body", "読み直した")
+			.param("keepPhotoIds", "10", "11")
+			.with(loggedIn(1))
+			.with(csrf()))).hasStatusOk();
+	}
+
+	// FN-04 4 章：multipart の上限を超えたとき
+	@Test
+	void 写真が大きすぎてmultipartで断られたら413のPHOTO_TOO_LARGE() {
+		when(this.reviewService.create(anyLong(), anyLong(), any(), any()))
+			.thenThrow(new MaxUploadSizeExceededException(21));
+		assertError(this.mvc.post()
+			.uri("/api/books/56/reviews")
+			.multipart()
+			.param("rating", "4")
+			.param("body", "感想")
+			.with(loggedIn(1))
+			.with(csrf())
+			.exchange(), ErrorCode.PHOTO_TOO_LARGE, "photos");
+	}
+
 	@Test
 	void 編集もmultipartで受け取る() {
-		when(this.reviewService.edit(1, 1234, new ReviewInput(2, "読み直した", false))).thenReturn(VIEW);
+		when(this.reviewService.edit(1, 1234, new ReviewInput(2, "読み直した", false), null, List.of())).thenReturn(VIEW);
 		assertThat(this.mvc.perform(multipart(HttpMethod.PATCH, "/api/reviews/1234").param("rating", "2")
 			.param("body", "読み直した")
 			.with(loggedIn(1))

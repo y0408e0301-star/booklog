@@ -1,6 +1,6 @@
 import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BookDetail, ReviewView } from '../api'
 import { M } from '../messages'
 import { json, mockFetch, sentForm } from '../test/fetchMock'
@@ -266,6 +266,96 @@ describe('レビューの編集（G-6）', () => {
 
     expect(await screen.findByRole('status', { name: '今の URL' })).toHaveTextContent(/^\/books\/56$/)
     expect(Object.fromEntries(sentForm(fetch, 2))).toEqual({ rating: '3', body: '今の感想', spoiler: 'false' })
+  })
+})
+
+// 写真の選択（FN-04 PH-1〜PH-5）
+const photo = (name: string, type = 'image/jpeg', size = 10) => new File([new Uint8Array(size)], name, { type })
+const fileInput = () => screen.getByLabelText<HTMLInputElement>('添える写真のファイル')
+const previews = () => within(screen.getByRole('list', { name: '添える写真' })).getAllByRole('img')
+  .map((img) => img.getAttribute('src'))
+
+describe('写真の選択（G-6）', () => {
+  // jsdom には URL.createObjectURL がないので、ファイル名を返す偽物にする
+  beforeEach(() => {
+    URL.createObjectURL = (file: Blob) => `blob:${(file as File).name}`
+    URL.revokeObjectURL = () => {}
+  })
+
+  // TC-04-1（PH-2・PH-4）
+  it('選んだ写真を並べ、一度に 6 枚選ぶと先の 4 枚だけを残して M-22。4 枚あれば「写真を選ぶ」を押せない', async () => {
+    mockFetch({ 'GET /api/books/56': () => json(200, book()) })
+    renderForm()
+    await screen.findByRole('button', { name: '写真を選ぶ' })
+    await userEvent.upload(fileInput(), [1, 2, 3, 4, 5, 6].map((i) => photo(`${i}.jpg`)))
+
+    expect(await screen.findByText(M[22])).toBeInTheDocument()
+    expect(previews()).toEqual(['blob:1.jpg', 'blob:2.jpg', 'blob:3.jpg', 'blob:4.jpg'])
+    expect(screen.getByRole('button', { name: '写真を選ぶ' })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('button', { name: '写真 2 を外す' }))
+    expect(previews()).toEqual(['blob:1.jpg', 'blob:3.jpg', 'blob:4.jpg'])
+    expect(screen.getByRole('button', { name: '写真を選ぶ' })).toBeEnabled()
+  })
+
+  // TC-04-2・TC-04-3（PH-3）
+  it('5MB を超える写真・GIF は添えず M-23', async () => {
+    mockFetch({ 'GET /api/books/56': () => json(200, book()) })
+    renderForm()
+    await screen.findByRole('button', { name: '写真を選ぶ' })
+    // accept を外して、選べない形式も渡す
+    await userEvent.upload(fileInput(), [photo('a.jpg', 'image/jpeg', 5 * 1024 * 1024 + 1), photo('b.gif', 'image/gif'),
+      photo('c.png', 'image/png')], { applyAccept: false })
+
+    expect(await screen.findByText(M[23])).toBeInTheDocument()
+    expect(previews()).toEqual(['blob:c.png'])
+  })
+
+  // PH-5
+  it('投稿すると写真を選んだ順に送る。API が形式の誤りを返したら M-23 を出し、写真を残す', async () => {
+    const fetch = mockFetch({
+      'GET /api/books/56': () => json(200, book()),
+      'POST /api/books/56/reviews': () => json(400, { code: 'PHOTO_TYPE_INVALID', message: M[23], field: 'photos' }),
+    })
+    renderForm()
+    await userEvent.click(await screen.findByRole('radio', { name: '星 4' }))
+    await userEvent.type(field('感想（必須）'), '写真つき')
+    await userEvent.upload(fileInput(), [photo('a.jpg'), photo('b.png', 'image/png')])
+    await userEvent.click(screen.getByRole('button', { name: '投稿する' }))
+
+    expect(await screen.findByText(M[23])).toBeInTheDocument()
+    expect(sentForm(fetch, 1).getAll('photos').map((f) => (f as File).name)).toEqual(['a.jpg', 'b.png'])
+    expect(previews()).toEqual(['blob:a.jpg', 'blob:b.png'])
+  })
+
+  // TC-04-1・TC-04-5（PH-4、FN-04 5 章の 5）
+  it('編集では今の写真も並べ、残す写真を keepPhotoIds、足す写真を photos で送る。合わせて 4 枚まで', async () => {
+    const photos = [77, 78, 79].map((id) => ({ id, url: `https://s3/${id}.jpg`, expiresAt: '2999-01-01T00:00:00Z' }))
+    const fetch = mockFetch({ ...editRoutes({ photos }), 'PATCH /api/reviews/1234': () => json(200, review()) })
+    renderForm()
+    await screen.findByRole('heading', { name: 'レビューを編集' })
+    expect(previews()).toEqual(['https://s3/77.jpg', 'https://s3/78.jpg', 'https://s3/79.jpg'])
+
+    // 残す写真が 3 枚なので、足せるのは 1 枚まで
+    await userEvent.upload(fileInput(), [photo('a.jpg'), photo('b.jpg')])
+    expect(await screen.findByText(M[22])).toBeInTheDocument()
+    expect(previews()).toEqual(['https://s3/77.jpg', 'https://s3/78.jpg', 'https://s3/79.jpg', 'blob:a.jpg'])
+
+    await userEvent.click(screen.getByRole('button', { name: '写真 2 を外す' }))
+    await userEvent.click(screen.getByRole('button', { name: '保存する' }))
+    await vi.waitFor(() => expect(fetch.keys()).toContain('PATCH /api/reviews/1234'))
+    const sent = sentForm(fetch, 2)
+    expect(sent.getAll('keepPhotoIds')).toEqual(['77', '79'])
+    expect(sent.getAll('photos').map((f) => (f as File).name)).toEqual(['a.jpg'])
+  })
+
+  it('編集で写真を外しただけでも「保存する」を押せる', async () => {
+    const photos = [{ id: 77, url: 'https://s3/77.jpg', expiresAt: '2999-01-01T00:00:00Z' }]
+    mockFetch(editRoutes({ photos }))
+    renderForm()
+    expect(await screen.findByRole('button', { name: '保存する' })).toBeDisabled()
+    await userEvent.click(screen.getByRole('button', { name: '写真 1 を外す' }))
+    expect(screen.getByRole('button', { name: '保存する' })).toBeEnabled()
   })
 })
 

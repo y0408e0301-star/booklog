@@ -189,15 +189,19 @@ export function fetchBook(id: number): Promise<BookDetail> {
 // レビュー（機能定義書 3.5 ReviewView）。日時は ISO 8601 の UTC。spoiler が true でも body は返る（伏せるのは画面）
 export type ReviewView = Schemas['ReviewView']
 
-// 星・感想・ネタバレあり（FN-03 4 章）。写真（FN-04）は 1-6 で足す
-export type ReviewInput = { rating: number, body: string, spoiler: boolean }
+// 写真（FN-04）。url は 15 分で使えなくなる署名付き URL で、expiresAt を過ぎたら取り直す（PH-8）
+export type ReviewPhoto = Schemas['Photo']
+
+// 星・感想・ネタバレあり（FN-03 4 章）と、足す写真（FN-04。選んだ順）
+export type ReviewInput = { rating: number, body: string, spoiler: boolean, photos: File[] }
 
 // 写真と一緒に送れるよう multipart で送る（FN-03 6 章）
-function reviewForm({ rating, body, spoiler }: ReviewInput): FormData {
+function reviewForm({ rating, body, spoiler, photos }: ReviewInput): FormData {
   const form = new FormData()
   form.append('rating', String(rating))
   form.append('body', body)
   form.append('spoiler', String(spoiler))
+  for (const photo of photos) form.append('photos', photo)
   return form
 }
 
@@ -209,8 +213,11 @@ export function fetchReview(id: number): Promise<ReviewView> {
   return requestJson<ReviewView>('GET', `/api/reviews/${id}`)
 }
 
-export function editReview(id: number, input: ReviewInput): Promise<ReviewView> {
-  return requestJson<ReviewView>('PATCH', `/api/reviews/${id}`, reviewForm(input))
+// keepPhotoIds は残す今の写真の ID。ない写真は外れ、足す写真はその後ろに並ぶ（FN-04 5 章の 5）
+export function editReview(id: number, input: ReviewInput, keepPhotoIds: number[]): Promise<ReviewView> {
+  const form = reviewForm(input)
+  for (const photoId of keepPhotoIds) form.append('keepPhotoIds', String(photoId))
+  return requestJson<ReviewView>('PATCH', `/api/reviews/${id}`, form)
 }
 
 export async function deleteReview(id: number): Promise<void> {
@@ -223,6 +230,15 @@ export type ReviewPage = Schemas['ReviewPage']
 export function fetchBookReviews(bookId: number, cursor: string | null = null): Promise<ReviewPage> {
   const query = cursor === null ? '' : `?${new URLSearchParams({ cursor })}`
   return requestJson<ReviewPage>('GET', `/api/books/${bookId}/reviews${query}`)
+}
+
+// ---------------------------------------------------------------- FN-04 写真
+
+// 写真の URL を取り直す（PH-8）。削除された写真は結果に入らない
+export async function refreshPhotoUrls(photoIds: number[]): Promise<ReviewPhoto[]> {
+  const res = await requestJson<Schemas['UrlsResponse']>('POST', '/api/photos/urls',
+    { photoIds } satisfies Schemas['UrlsRequest'])
+  return res.items
 }
 
 // ---------------------------------------------------------------- FN-09 タイムライン

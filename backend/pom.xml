@@ -33,7 +33,20 @@
 		<!-- API の仕様書（OpenAPI）を作る springdoc-openapi。3.x が Spring Boot 4 に対応している -->
 		<springdoc.version>3.1.1</springdoc.version>
 		<jsoup.version>1.23.2</jsoup.version>
+		<!-- AWS SDK for Java 2.x の版（技術スタック定義書：BOM で固定する） -->
+		<aws-sdk.version>2.56.0</aws-sdk.version>
 	</properties>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${aws-sdk.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -80,6 +93,11 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<!-- 写真の保存・削除と署名付き URL（S3。機能定義書 FN-04） -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
 		</dependency>
 		<!-- API の仕様書（OpenAPI）をコードから作り、開発中は Swagger UI で見る（基本設計書 2.1）。
 			 公開先では出さない（application.properties の springdoc.*.enabled） -->
@@ -133,6 +151,12 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- テスト用の S3（MinIO）を Docker で起動する（TestcontainersConfiguration） -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-minio</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

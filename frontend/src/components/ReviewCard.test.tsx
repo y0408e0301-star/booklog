@@ -79,6 +79,19 @@ describe('ReviewCard', () => {
     expect(screen.queryByText('⚠ ネタバレあり')).not.toBeInTheDocument()
   })
 
+  // PH-6・RV-11
+  it('写真は感想の下に並べ、ネタバレありでは写真も伏せる', async () => {
+    const photos = [{ id: 77, url: 'https://s3/77.jpg', expiresAt: '2999-01-01T00:00:00Z' }]
+    const { unmount } = renderComponent(<ReviewCard review={review({ photos })} showBook onDelete={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '写真 1 / 1 を拡大' })).toBeInTheDocument()
+    unmount()
+
+    renderComponent(<ReviewCard review={review({ photos, spoiler: true })} showBook onDelete={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: '写真 1 / 1 を拡大' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'ネタバレを表示' }))
+    expect(screen.getByRole('button', { name: '写真 1 / 1 を拡大' })).toBeInTheDocument()
+  })
+
   it('自分のレビューでも伏せる', () => {
     renderComponent(<ReviewCard review={review({ spoiler: true, mine: true })} showBook onDelete={vi.fn()} />)
     expect(screen.getByRole('button', { name: 'ネタバレを表示' })).toBeInTheDocument()

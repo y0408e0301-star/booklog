@@ -17,10 +17,10 @@ public record ReviewView(long id, Author author, BookSummary book, int rating, S
 		photos = List.copyOf(photos);
 	}
 
-	// 写真（1-6）・参考になった（1-8）・コメント（1-9）は、その機能を作るときに ReviewViews でまとめて取る
-	static ReviewView of(Review review, long viewerId) {
+	// 写真は ReviewViews がまとめて取って渡す。参考になった（1-8）・コメント（1-9）は、その機能を作るときに足す
+	static ReviewView of(Review review, long viewerId, List<Photo> photos) {
 		return new ReviewView(review.getId(), Author.of(review.getAuthor()), BookSummary.of(review.getBook()),
-				review.getRating(), review.getBody(), review.isSpoiler(), List.of(), 0, 0, false,
+				review.getRating(), review.getBody(), review.isSpoiler(), photos, 0, 0, false,
 				review.isWrittenBy(viewerId), review.getCreatedAt(), review.getEditedAt());
 	}
 
@@ -46,7 +46,7 @@ public record ReviewView(long id, Author author, BookSummary book, int rating, S
 
 	}
 
-	// 写真。url は署名付き URL で、expiresAt を過ぎると使えない（FN-04。1-6 で入れる）
+	// 写真。url は署名付き URL で、expiresAt を過ぎると使えない（FN-04 PH-8）
 	public record Photo(long id, String url, Instant expiresAt) {
 	}
 

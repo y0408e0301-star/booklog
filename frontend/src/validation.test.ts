@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  countChars, isValidDisplayName, isValidPassword, isValidUsername, limitChars, normalizeBody, remainingReviewChars,
+  addPhotos, countChars, isAcceptablePhoto, isValidDisplayName, isValidPassword, isValidUsername, limitChars,
+  normalizeBody, PHOTO_BYTES_MAX, remainingReviewChars,
 } from './validation'
 
 // 文字数の数え方（画面設計書 2.12）。API と同じくコードポイントで数える
@@ -88,5 +89,44 @@ describe('remainingReviewChars', () => {
     expect(remainingReviewChars('あ'.repeat(2001))).toBe(-1)
     // CRLF も 1 文字と数える
     expect(remainingReviewChars('あ\r\nい')).toBe(1997)
+  })
+})
+
+// 写真（FN-04 4 章、TC-04-1〜TC-04-3）
+const file = (name: string, type: string, size = 10) => new File([new Uint8Array(size)], name, { type })
+const jpeg = (name = 'a.jpg') => file(name, 'image/jpeg')
+
+describe('isAcceptablePhoto', () => {
+  it('5MB までの JPEG・PNG・WebP だけを添えられる', () => {
+    expect(isAcceptablePhoto(file('a.jpeg', 'image/jpeg', PHOTO_BYTES_MAX))).toBe(true)
+    expect(isAcceptablePhoto(file('a.PNG', 'image/png'))).toBe(true)
+    expect(isAcceptablePhoto(file('a.webp', 'image/webp'))).toBe(true)
+    expect(isAcceptablePhoto(file('a.jpg', 'image/jpeg', PHOTO_BYTES_MAX + 1))).toBe(false)
+    expect(isAcceptablePhoto(file('a.gif', 'image/gif'))).toBe(false)
+    // 拡張子だけ変えたもの・種類だけ合っているもの
+    expect(isAcceptablePhoto(file('a.jpg', 'text/plain'))).toBe(false)
+    expect(isAcceptablePhoto(file('a.txt', 'image/jpeg'))).toBe(false)
+  })
+})
+
+describe('addPhotos', () => {
+  it('今の写真の後ろに足す', () => {
+    const [a, b] = [jpeg('a.jpg'), jpeg('b.jpg')]
+    expect(addPhotos([a], [b])).toEqual({ photos: [a, b], error: null })
+  })
+
+  it('一度に 6 枚選ぶと、先の 4 枚だけを残して M-22', () => {
+    const picked = [1, 2, 3, 4, 5, 6].map((i) => jpeg(`${i}.jpg`))
+    expect(addPhotos([], picked)).toEqual({ photos: picked.slice(0, 4), error: 'M22' })
+  })
+
+  it('編集で残す写真が 3 枚あれば、足せるのは 1 枚まで', () => {
+    const picked = [jpeg('a.jpg'), jpeg('b.jpg')]
+    expect(addPhotos([], picked, 3)).toEqual({ photos: picked.slice(0, 1), error: 'M22' })
+  })
+
+  it('添えられない写真は外して M-23', () => {
+    const ok = jpeg()
+    expect(addPhotos([], [ok, file('a.gif', 'image/gif')])).toEqual({ photos: [ok], error: 'M23' })
   })
 })

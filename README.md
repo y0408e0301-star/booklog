@@ -7,7 +7,7 @@
 - 作る順番と進み具合：[開発計画書](docs/development-plan.md)
 - 開発ルール：[CONTRIBUTING.md](CONTRIBUTING.md)
 
-いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン（開発計画書 1-1〜1-5）まで作っています。公開の手順は、作ったときに足します。
+いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン、レビューの写真（開発計画書 1-1〜1-6）まで作っています。公開の手順は、作ったときに足します。
 
 ## 起動方法
 
@@ -51,6 +51,14 @@ npm ci
 - 呼び出しは 1 日 1,000 回までに数えています（google_books_usage の表。日本時間の 0 時に 0 に戻る）。同じ文字・同じページの検索は 24 時間使い回すので、Google Books API は呼びません
 - 自動のテスト（`mvnw verify`・`npm test`）は Google Books API を呼ばないので、キーは要りません
 
+### 写真の置き場所（AWS S3）
+
+レビューの写真（FN-04）は、開発中も本物の S3 の開発用バケット `bl-photos-dev-467112307516`（東京リージョン、非公開）に置きます。API サーバーは AWS の鍵を AWS SDK の標準の探し方で見つけるので、開発する PC で `aws configure` を済ませ、`~/.aws/credentials` に、このバケットの `reviews/` を読み書きできる IAM ユーザーの鍵を置いておきます。
+
+- 画面は API が発行した署名付き URL（15 分）で S3 から直接読みます。バケットの URL を直接開いても 403 で見られません（N-16）
+- 自動のテスト（`mvnw verify`）は Testcontainers で MinIO（S3 の代わり）を起動するので、AWS の鍵は要りません
+- S3 から消せなかった写真は storage_deletions の表に記録し、毎日 4:30 に消し直します
+
 ### 起動する
 
 ターミナルを使い、リポジトリのフォルダから次を順に実行します。
@@ -66,7 +74,7 @@ npm ci
 - API サーバーは http://localhost:8080/actuator/health で `{"status":"UP"}` が返れば起動済みです
 - API の仕様書は http://localhost:8080/swagger-ui.html （Swagger UI）で見られます（下の「API の仕様書」）
 - ポートは上の表のものだけを使います（[CLAUDE.md](CLAUDE.md) の「サーバーのポート」）。使われていたら、そのポートを使っているプロセスを止めてから起動し直します（別のポートでは起動しません）。ほかのアプリの PostgreSQL のコンテナが 5432 を使っていたら、`docker stop <コンテナ名>` で止めてから起動します
-- 開発では、データベースの接続先と JWT の秘密の値は `backend/src/main/resources/application.properties` の既定値（開発用）を使うので、設定は要りません（Google Books API の API キーだけは上のとおり渡します）。公開環境では環境変数（`DB_URL`・`DB_USERNAME`・`DB_PASSWORD`・`JWT_SECRET`・`COOKIE_SECURE=true`・`GOOGLE_BOOKS_API_KEY`）で渡します
+- 開発では、データベースの接続先と JWT の秘密の値は `backend/src/main/resources/application.properties` の既定値（開発用）を使うので、設定は要りません（Google Books API の API キーだけは上のとおり渡します）。公開環境では環境変数（`DB_URL`・`DB_USERNAME`・`DB_PASSWORD`・`JWT_SECRET`・`COOKIE_SECURE=true`・`GOOGLE_BOOKS_API_KEY`・`S3_BUCKET`）で渡します
 
 ### 止める
 
