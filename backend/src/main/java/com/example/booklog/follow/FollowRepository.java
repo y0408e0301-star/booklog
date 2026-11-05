@@ -29,6 +29,10 @@ public interface FollowRepository extends JpaRepository<Follow, Follow.Key> {
 
 	long countByFolloweeId(long followeeId);
 
+	long countByFollowerId(long followerId);
+
+	boolean existsByFollowerIdAndFolloweeId(long followerId, long followeeId);
+
 	// userId がフォローしている人を、cursor（日時と ID）より後ろから新しくフォローした順に。
 	// 同じ日時ならユーザーの ID の大きい順（F-5、FN-07 5 章の 3）
 	@Query("""

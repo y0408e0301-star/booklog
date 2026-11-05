@@ -80,6 +80,15 @@ describe('フォロー中・フォロワーの一覧（G-10）', () => {
     expect(fetch.keys()).toContain('GET /api/users/taro_y/following?cursor=1_2')
   })
 
+  it('見出しは表示名。読めなければ @ユーザー ID のまま', async () => {
+    mockFetch({
+      'GET /api/users/taro_y': () => json(200, { displayName: 'たろう' }),
+      'GET /api/users/taro_y/following': page([]),
+    })
+    renderList()
+    expect(await screen.findByRole('heading', { name: 'たろう' })).toBeInTheDocument()
+  })
+
   // TC-07-5・F-7
   it('存在しないユーザーは M-28', async () => {
     mockFetch({

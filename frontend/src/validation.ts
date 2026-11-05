@@ -3,6 +3,8 @@
 export const USERNAME_MAX = 15
 export const DISPLAY_NAME_MAX = 30
 export const PASSWORD_MAX = 64
+// 自己紹介（FN-11 PF-7）
+export const BIO_MAX = 160
 // 書籍検索の文字（FN-02 4 章）
 export const SEARCH_QUERY_MAX = 100
 // レビューの感想（FN-03 RV-4）

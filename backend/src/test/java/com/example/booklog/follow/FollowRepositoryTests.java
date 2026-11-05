@@ -48,6 +48,18 @@ class FollowRepositoryTests {
 		this.jiro = this.em.persist(new User("jiro", "じろう", "hash", NOW));
 	}
 
+	// FN-11 の件数と followedByMe。フォローは片方向
+	@Test
+	void フォロー数を数えフォローしているかを調べる() {
+		this.follows.insertIfAbsent(this.taro.getId(), this.hanako.getId());
+		this.follows.insertIfAbsent(this.taro.getId(), this.jiro.getId());
+
+		assertThat(this.follows.countByFollowerId(this.taro.getId())).isEqualTo(2);
+		assertThat(this.follows.countByFollowerId(this.hanako.getId())).isZero();
+		assertThat(this.follows.existsByFollowerIdAndFolloweeId(this.taro.getId(), this.hanako.getId())).isTrue();
+		assertThat(this.follows.existsByFollowerIdAndFolloweeId(this.hanako.getId(), this.taro.getId())).isFalse();
+	}
+
 	// F-4・5 章の 1：何回フォローしても 1 つ。解除は何回しても何もしない
 	@Test
 	void 何回フォローしても一つで何回解除しても何もしない() {

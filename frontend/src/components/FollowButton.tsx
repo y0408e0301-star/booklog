@@ -8,7 +8,7 @@ import ui from './ui.module.css'
 type Props = {
   username: string
   following: boolean
-  // 送り終わったら、相手の最新のフォロワー数を知らせる（G-8 の件数。1-11）
+  // 送り終わったら、相手の最新のフォロワー数を知らせる（G-8 の件数）
   onChange?: (result: FollowResult) => void
 }
 

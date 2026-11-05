@@ -246,6 +246,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 表示名と自己紹介を変える
+         * @description 変えられるのはログインした人のプロフィールだけ
+         */
+        patch: operations["editProfile"];
+        trace?: never;
+    };
     "/api/photos/urls": {
         parameters: {
             query?: never;
@@ -359,6 +379,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * プロフィール
+         * @description 件数は開いたときに数える
+         */
+        get: operations["getProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/{username}/bookshelf": {
         parameters: {
             query?: never;
@@ -443,6 +483,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{username}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * その人のレビューの一覧
+         * @description 新しい順に 20 件ずつ
+         */
+        get: operations["listUserReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -490,6 +550,14 @@ export interface components {
             thumbnailUrl: string | null;
             title: string;
         };
+        BookshelfCounts: {
+            /** Format: int64 */
+            READ: number;
+            /** Format: int64 */
+            READING: number;
+            /** Format: int64 */
+            WANT: number;
+        };
         CommentPage: {
             items: components["schemas"]["CommentView"][];
             nextCursor: string | null;
@@ -506,6 +574,10 @@ export interface components {
         CreateCommentRequest: {
             /** @description 改行を LF にそろえ、前後の空白を除いて 1〜500 文字（C-2） */
             body: string;
+        };
+        EditProfileRequest: {
+            bio: string;
+            displayName: string;
         };
         EditReviewForm: {
             /** @description 感想。改行を LF にそろえ、前後の空白を除いて 1〜2,000 文字（RV-4） */
@@ -559,6 +631,20 @@ export interface components {
             /** Format: int64 */
             id: number;
             url: string;
+        };
+        ProfileView: {
+            bio: string;
+            bookshelfCounts: components["schemas"]["BookshelfCounts"];
+            displayName: string;
+            followedByMe: boolean;
+            /** Format: int64 */
+            followerCount: number;
+            /** Format: int64 */
+            followingCount: number;
+            me: boolean;
+            /** Format: int64 */
+            reviewCount: number;
+            username: string;
         };
         ReviewForm: {
             /** @description 感想。改行を LF にそろえ、前後の空白を除いて 1〜2,000 文字（RV-4） */
@@ -1240,6 +1326,48 @@ export interface operations {
             };
         };
     };
+    editProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileView"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     refreshPhotoUrls: {
         parameters: {
             query?: never;
@@ -1614,6 +1742,46 @@ export interface operations {
             };
         };
     };
+    getProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileView"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listBookshelf: {
         parameters: {
             query?: {
@@ -1803,6 +1971,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserPage"];
+                };
+            };
+            /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description 思いがけない失敗 */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listUserReviews: {
+        parameters: {
+            query?: {
+                /** @description 前回の nextCursor。最初は省く */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewPage"];
                 };
             };
             /** @description 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧） */

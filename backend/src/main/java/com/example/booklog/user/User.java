@@ -82,7 +82,7 @@ public class User {
 		}
 	}
 
-	// 表示名と自己紹介を変える（PF-6・PF-7。1-11 で使う）。値は確かめてから渡す
+	// 表示名と自己紹介を変える（PF-6・PF-7）。値は確かめてから渡す
 	public void editProfile(String displayName, String bio, Instant now) {
 		this.displayName = displayName;
 		this.bio = bio;

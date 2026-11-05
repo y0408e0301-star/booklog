@@ -91,6 +91,23 @@ class ReviewRepositoryTests {
 			.containsExactly(followed);
 	}
 
+	// PF-4：その人のレビューだけを、cursor より古いものから新しい順に
+	@Test
+	void その人のレビューを新しい順に読み件数を数える() {
+		long first = save(this.taro, this.neko, 4).getId();
+		save(this.hanako, this.neko, 3);
+		long second = save(this.taro, this.kokoro, 5).getId();
+		this.em.clear();
+
+		assertThat(this.reviews.findByAuthorBefore(this.taro.getId(), Long.MAX_VALUE, Limit.of(21)))
+			.extracting(Review::getId)
+			.containsExactly(second, first);
+		assertThat(this.reviews.findByAuthorBefore(this.taro.getId(), second, Limit.of(21))).extracting(Review::getId)
+			.containsExactly(first);
+		assertThat(this.reviews.countByAuthorId(this.taro.getId())).isEqualTo(2);
+		assertThat(this.reviews.countByAuthorId(this.hanako.getId())).isOne();
+	}
+
 	// F-3（データ設計書 4.7）
 	@Test
 	void 自分自身はフォローできない() {
