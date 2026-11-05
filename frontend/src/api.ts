@@ -153,6 +153,11 @@ export async function logout(): Promise<void> {
   await request('POST', '/api/auth/logout', undefined, false)
 }
 
+// 退会する（A-11）。パスワードが違えば ApiError（PASSWORD_WRONG、M-10）
+export async function withdraw(password: string): Promise<void> {
+  await request('DELETE', '/api/me', { password } satisfies Schemas['WithdrawRequest'])
+}
+
 // ---------------------------------------------------------------- FN-02 書籍検索・登録
 
 // 検索の結果の 1 件（FN-02 6 章）。まだ取り込んでいない本もあるので、アプリの本の ID は持たない

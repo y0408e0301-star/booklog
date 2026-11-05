@@ -26,6 +26,9 @@ public enum ErrorCode {
 
 	REFRESH_FAILED(HttpStatus.UNAUTHORIZED, "ログインの有効期限が切れました。もう一度ログインしてください。"),
 
+	// 退会のときのパスワードが違う（FN-01 9 章。M-10）
+	PASSWORD_WRONG(HttpStatus.BAD_REQUEST, "パスワードが違います。"),
+
 	// 書籍検索・登録（FN-02 9 章。M-12・M-14・M-15）
 	QUERY_REQUIRED(HttpStatus.BAD_REQUEST, "ISBN か書名を入力してください。"),
 

@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -12,14 +13,17 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.example.booklog.common.ApiException;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.review.ReviewPhotoRepository;
+import com.example.booklog.storage.StorageDeleter;
 import com.example.booklog.user.DisplayNames;
 import com.example.booklog.user.User;
 import com.example.booklog.user.UserRepository;
 
-// ユーザー登録・ログイン・JWT の取り直し・ログアウト（機能定義書 FN-01）
+// ユーザー登録・ログイン・JWT の取り直し・ログアウト・退会（機能定義書 FN-01）
 @Service
 class AuthService {
 
@@ -46,17 +50,27 @@ class AuthService {
 
 	private final PasswordEncoder passwordEncoder;
 
+	private final ReviewPhotoRepository photos;
+
+	private final StorageDeleter storageDeleter;
+
+	private final TransactionTemplate transaction;
+
 	private final Clock clock;
 
 	// ユーザーがいないときに、いるときと同じくらい時間をかけるために確かめるハッシュ（FN-01 3.2）
 	private final String dummyPasswordHash;
 
 	AuthService(UserRepository users, RefreshTokenRepository refreshTokens, TokenService tokens,
-			PasswordEncoder passwordEncoder, Clock clock) {
+			PasswordEncoder passwordEncoder, ReviewPhotoRepository photos, StorageDeleter storageDeleter,
+			TransactionTemplate transaction, Clock clock) {
 		this.users = users;
 		this.refreshTokens = refreshTokens;
 		this.tokens = tokens;
 		this.passwordEncoder = passwordEncoder;
+		this.photos = photos;
+		this.storageDeleter = storageDeleter;
+		this.transaction = transaction;
 		this.clock = clock;
 		this.dummyPasswordHash = passwordEncoder.encode("dummy-password-0");
 	}
@@ -155,6 +169,22 @@ class AuthService {
 		return this.users.findById(userId)
 			.map((user) -> Me.of(user))
 			.orElseThrow(() -> new ApiException(ErrorCode.UNAUTHENTICATED));
+	}
+
+	// 退会する（A-11・A-12）。パスワードの間違いはログインの失敗に数えない（5 章の 7）。
+	// 写真の置き場所を読んでから 1 つのトランザクションで users の行を消し（外部キーで一緒に消える。5 章の 6）、
+	// コミットの後で S3 から消す（BR-5・BR-14）。パスワードを確かめる間は、データベースの接続を持たない
+	void withdraw(long userId, @Nullable String password) {
+		User user = this.users.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHENTICATED));
+		if (password == null || !passwordMatches(password, user.getPasswordHash())) {
+			throw new ApiException(ErrorCode.PASSWORD_WRONG, "password");
+		}
+		List<String> keys = this.transaction.execute((status) -> {
+			List<String> found = this.photos.findStorageKeysByAuthorId(userId);
+			this.users.delete(user);
+			return found;
+		});
+		this.storageDeleter.deleteOrRecord(keys);
 	}
 
 	private boolean passwordMatches(String password, String hash) {

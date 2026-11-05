@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 import { isSubmitKey, remainingText, useAutoGrow } from '../components/textarea'
 import { useToast } from '../components/ToastContext'
 import ui from '../components/ui.module.css'
+import WithdrawDialog from '../components/WithdrawDialog'
 import { M } from '../messages'
 import { BIO_MAX, countChars, DISPLAY_NAME_MAX, limitChars, normalizeBody } from '../validation'
 import styles from './ProfilePage.module.css'
@@ -15,7 +16,7 @@ type State =
   | { status: 'loaded', profile: Profile }
   | { status: 'failed' }
 
-// G-9 プロフィールの編集画面（画面設計書 11 章、FN-11 PF-6・PF-7）。「退会する」は開発計画書 1-12 で足す
+// G-9 プロフィールの編集画面（画面設計書 11 章、FN-11 PF-6〜PF-8）
 export default function EditProfilePage() {
   const { me } = useAuth()
   const username = me?.username
@@ -66,6 +67,7 @@ function EditProfileForm({ profile }: { profile: Profile }) {
   const [bio, setBio] = useState(profile.bio)
   const [errors, setErrors] = useState<Errors>({})
   const [sending, setSending] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
   // 素早く 2 回押しても 1 回だけ送る
   const sendingRef = useRef(false)
   const nameRef = useRef<HTMLInputElement>(null)
@@ -165,6 +167,13 @@ function EditProfileForm({ profile }: { profile: Profile }) {
           <button type="submit" className={ui.primary} disabled={!canSubmit}>{sending ? '保存中…' : '保存する'}</button>
         </div>
       </form>
+      {/* いちばん下に「退会する」（PF-8）。押すと G-13（A-10） */}
+      <section className={styles.withdraw} aria-labelledby={`${id}-withdraw`}>
+        <h2 id={`${id}-withdraw`}>退会</h2>
+        <p>退会すると、あなたのレビュー・写真・コメント・本棚などがすべて削除され、元に戻せません。</p>
+        <button type="button" className={ui.danger} onClick={() => setWithdrawing(true)}>退会する</button>
+      </section>
+      {withdrawing && <WithdrawDialog onCancel={() => setWithdrawing(false)} />}
     </>
   )
 }

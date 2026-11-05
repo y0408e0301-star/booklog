@@ -40,3 +40,6 @@
 }
 .nameInput:focus { outline: 2px solid var(--primary); border-color: transparent; }
 textarea.bioInput { min-height: calc(3 * 1.5em + 18px); }
+.withdraw { margin-top: 8px; padding: 16px; border-top: 1px solid var(--line); }
+.withdraw h2 { margin: 0 0 4px; font-size: 16px; }
+.withdraw p { margin: 0 0 12px; color: var(--sub); }

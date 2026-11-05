@@ -34,6 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signedIn = useCallback((next: Me) => setMe(next), [])
 
+  const signedOut = useCallback(() => {
+    setMe(null)
+    navigate('/login', { replace: true })
+  }, [navigate])
+
   // 失敗しても G-1 に戻す（Cookie が残っていても、次に開いたときに確かめ直す）
   const signOut = useCallback(async () => {
     try {
@@ -41,10 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // 何もしない
     }
-    setMe(null)
-    navigate('/login', { replace: true })
-  }, [navigate])
+    signedOut()
+  }, [signedOut])
 
-  const auth = useMemo<Auth>(() => ({ me, signedIn, signOut }), [me, signedIn, signOut])
+  const auth = useMemo<Auth>(() => ({ me, signedIn, signOut, signedOut }), [me, signedIn, signOut, signedOut])
   return <AuthContext value={auth}>{children}</AuthContext>
 }
