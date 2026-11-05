@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
-// 画面（React をビルドしたファイル）を API と同じ Spring Boot から配る。E2E で使う（インフラ設計書 6 章）。
+// 画面（React をビルドしたファイル）を API と同じ Spring Boot から配る。E2E と手元の性能テストで使う（インフラ設計書 6 章）。
 // ファイルは jar を作るとき（mvnw package -Pwith-frontend）に classpath:/static/ に入る。
 // 開発中は Vite（5173）が、公開先は CloudFront が画面を配るので、static/ がなくても API はそのまま動く
 @Configuration(proxyBeanMethods = false)

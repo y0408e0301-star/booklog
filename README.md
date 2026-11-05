@@ -7,7 +7,7 @@
 - 作る順番と進み具合：[開発計画書](docs/development-plan.md)
 - 開発ルール：[CONTRIBUTING.md](CONTRIBUTING.md)
 
-いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン、レビューの写真、読書ステータスと本棚の API、参考になった、コメント、フォロー、プロフィール、退会（開発計画書 1-1〜1-12）と、画面を通したテスト（2-1）まで作っています。公開の手順は、作ったときに足します。
+いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン、レビューの写真、読書ステータスと本棚の API、参考になった、コメント、フォロー、プロフィール、退会（開発計画書 1-1〜1-12）と、画面を通したテスト（2-1）、性能テスト（2-2）まで作っています。公開の手順は、作ったときに足します。
 
 ## 起動方法
 
@@ -153,9 +153,39 @@ Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml]
 - 写真を使うテストは S3 の開発用のバケットに写真を置き、テストの中でレビューを消す・退会して消します。テストが途中で失敗すると、写真が残ることがあります
 - 落ちたテストは `frontend/test-results/` にトレースが残ります。`npx playwright show-trace <trace.zip のパス>` で、操作ごとの画面を見られます
 
+### 性能テスト
+
+要件定義書 11.1 の性能（N-1〜N-6）を、要件の量のデータ（ユーザー 1,000 人・本 5,000 冊・レビュー 1 万件など）を入れて測ります。方針は[基本設計書 2.4](docs/design/basic-design.md#24-性能テスト)にあります。P95（小さい順に並べて 95% の位置の値）が目標以内なら合格です。Pull Request の CI では動かしません。
+
+| コマンド（`frontend` で実行） | 内容 | かかる時間 |
+| --- | --- | --- |
+| `npm run perf -- seed` | 性能テスト用の DB `booklog_perf` にデータを入れ、タイムラインの写真 100 枚を S3 に置く。何回流しても同じデータになる | 約 1 分 |
+| `npm run perf -- api` | k6 で、1 人で各 API を 50 回ずつ呼ぶ（N-2・N-3・N-4） | 約 30 秒 |
+| `npm run perf -- load` | k6 で、30 人が同時に使う | 約 6 分半 |
+| `npm run perf -- ui` | Playwright（Edge）で、パソコンとスマートフォンの幅で N-1〜N-4 を 20 回ずつ測る。回線は下り 10Mbps・上り 30Mbps | 約 5 分 |
+| `npm run perf -- mixed` | k6 で 30 人の負荷をかけながら、画面で N-1〜N-4 を測る | 約 5 分 |
+| `npm run perf -- all` | 上の 4 つを順にすべて動かし、結果を `perf/results/summary.md` にまとめる | 約 20 分 |
+| `npm run perf -- clean` | データと S3 の写真を消す | 数秒 |
+
+手元で動かす手順：
+
+1. Docker Desktop を起動し、リポジトリのフォルダで `docker compose up -d`
+2. 下の「画面も入れた jar」の 1・2 で jar を作る
+3. 8080 の API サーバー（`mvnw spring-boot:run`）が動いていれば止め、リポジトリのフォルダで `java -Xmx768m -jar backend\target\backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=perf` を実行する（perf プロファイルは、開発用の DB ではなく `booklog_perf` につなぐ。ポートは 8080 のまま）
+4. `frontend` で `npm run perf -- seed`（初回は DB を作って止まるので、3 の API を起動し直してから、もう一度実行する。表は API の起動のときに Flyway が作る）
+5. `npm run perf -- all`（または `api`・`ui` など 1 つずつ）。終わったら `npm run perf -- clean`
+
+- k6 は Docker のイメージ（`grafana/k6:2.2.0`）で動くので、入れる必要はありません。Playwright はパソコンの Edge を使います
+- 写真 4 枚（20MB）の投稿（N-5）は、`PERF_UPLOAD=1` を付けたときだけ測ります。手元では API から S3 への送信が家の回線を通るので、公開先とは条件が違うためです
+- 書籍検索（N-6）は、`PERF_BOOK_SEARCH=1` を付けたときだけ、本物の Google Books API で 20 回測ります。API サーバーに環境変数 `GOOGLE_BOOKS_API_KEY` を渡しておきます
+- 測る回数は `PERF_RUNS`（既定 20）、測る先は `PERF_BASE_URL`（既定 `http://localhost:8080`）で変えられます
+- 手元とランナーの数値は参考です。合否は公開先（AWS）で測った値で決めます（開発計画書 2-8）
+
+GitHub Actions で動かす：Actions の画面で「性能テスト」を選び、「Run workflow」を押します（[.github/workflows/perf.yml](.github/workflows/perf.yml)）。測る先を空にすると、ランナーの中で DB・MinIO（S3 の代わり）・jar を起動して、データを入れてから測ります（N-5 も測ります。N-6 は測りません）。結果は実行の画面に表で出て、成果物 `perf-results` にも残ります。
+
 ### 画面も入れた jar
 
-E2E の CI では、画面も入れた jar 1 つでアプリを動かします（公開先の画面は CloudFront が配るので、この jar の画面は使いません）。
+E2E の CI と性能テストでは、画面も入れた jar 1 つでアプリを動かします（公開先の画面は CloudFront が配るので、この jar の画面は使いません）。
 
 1. `frontend` で `npm run build`
 2. `backend` で `.\mvnw.cmd clean package -Pwith-frontend`（画面をビルドしていなければ止まります）
