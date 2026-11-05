@@ -34,6 +34,7 @@
 | データベース（PostgreSQL） | 5432 | compose.yaml |
 | API（Spring Boot） | 8080 | Spring Boot の既定値（`server.port` は指定しない） |
 | 画面（Vite） | 5173 | Vite の既定値（`--port` は指定しない） |
+| Google Books API の偽物（E2E のときだけ） | 9100 | frontend/e2e/fake-google-books.ts（Playwright が起動する） |
 
 - ポートが使われていたら、そのポートを使っているプロセスを止めてから、上のポートで起動し直す
 - 別のポートでの一時起動（`--port`、`server.port`、環境変数 `PORT` など）はしない

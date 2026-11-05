@@ -50,3 +50,49 @@ jobs:
           java-version: 21
           cache: maven
       - run: ./mvnw -B verify
+
+  e2e:
+    name: E2E（画面を通したテスト）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # ランナーの中で PostgreSQL・MinIO（S3 の代わり）・jar を起動し、jar が配る画面（8080）を Edge で操作する。
+    # Edge は ubuntu-latest に入っている（channel: msedge）。Google Books API の偽物（9100）は Playwright が起動する
+    env:
+      E2E_BASE_URL: http://localhost:8080
+      GOOGLE_BOOKS_BASE_URL: http://localhost:9100
+      S3_BUCKET: bl-photos-e2e
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: e2e-minio
+      S3_SECRET_KEY: e2e-minio-secret
+      AWS_ACCESS_KEY_ID: e2e-minio
+      AWS_SECRET_ACCESS_KEY: e2e-minio-secret
+      AWS_REGION: ap-northeast-1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: DB・MinIO・jar を起動する
+        uses: ./.github/actions/start-app
+        with:
+          log: api.log
+      - run: npx playwright test
+        working-directory: frontend
+      # 失敗したテストのトレース（npx playwright show-trace で開く）と、API のログ
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-results
+          path: |
+            frontend/test-results/
+            api.log
+          if-no-files-found: ignore
