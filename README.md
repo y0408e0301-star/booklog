@@ -7,7 +7,7 @@
 - 作る順番と進み具合：[開発計画書](docs/development-plan.md)
 - 開発ルール：[CONTRIBUTING.md](CONTRIBUTING.md)
 
-いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン、レビューの写真、読書ステータスと本棚の API、参考になった、コメント、フォロー、プロフィール、退会（開発計画書 1-1〜1-12）と、画面を通したテスト（2-1）、性能テスト（2-2）まで作っています。公開の手順は、作ったときに足します。
+いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン、レビューの写真、読書ステータスと本棚の API、参考になった、コメント、フォロー、プロフィール、退会（開発計画書 1-1〜1-12）と、画面を通したテスト（2-1）、性能テスト（2-2）、公開先の API のイメージ（`backend/Dockerfile`）と環境を作る Terraform（`deploy/terraform/`。2-3）まで作っています。まだ公開はしていません。公開の手順は、作ったときに足します。
 
 ## 起動方法
 
@@ -88,8 +88,9 @@ npm ci
 | API サーバー | `backend` で `.\mvnw.cmd verify` | テスト（下の「API サーバーのテストの種類」）、書式チェック（spring-javaformat。直すときは `.\mvnw.cmd spring-javaformat:apply`）、静的解析（SpotBugs）。API の仕様書（docs/api/openapi.yaml）がコードと違えば、書き直して失敗する |
 | 画面 | `frontend` で `npm run lint` → `npm test` → `npm run build` | lint（oxlint。React Hooks の決まり・アクセシビリティを含む）、テスト（Vitest・Testing Library。下の「画面のテスト」）、型チェックとビルド |
 | 画面を通したテスト | `frontend` で `npm run test:e2e` | Playwright で、主な流れ・各機能のシナリオ・権限・ログインの続き・全画面のアクセシビリティと横幅を画面から確かめる（下の「画面を通したテスト」） |
+| 公開環境（Terraform） | `deploy/terraform` で `terraform fmt -check -recursive` → `terraform init` → `terraform validate` → `tflint --init` → `tflint` | 書式・構文・lint（AWS には何も作らない） |
 
-Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）が上の 3 つと、画面の API の型が仕様書と同じかを自動で確かめます。push の前に、手元で両方を流し直してください（[開発計画書 5 章](docs/development-plan.md)）。
+Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）が上の 4 つ、画面の API の型が仕様書と同じか、公開用のイメージが作れるかを自動で確かめます。push の前に、手元で両方を流し直してください（[開発計画書 5 章](docs/development-plan.md)）。
 
 ### API サーバーのテストの種類
 

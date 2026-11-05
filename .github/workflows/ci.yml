@@ -50,6 +50,9 @@ jobs:
           java-version: 21
           cache: maven
       - run: ./mvnw -B verify
+      # verify で作った jar から、公開先（ECS Fargate）のイメージが作れるか確かめる（push はしない）
+      - name: 公開用のイメージを作る
+        run: docker build -t bl-app:ci .
 
   e2e:
     name: E2E（画面を通したテスト）
@@ -96,3 +99,23 @@ jobs:
             frontend/test-results/
             api.log
           if-no-files-found: ignore
+
+  terraform:
+    name: Terraform（書式・構文・lint）
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/terraform
+    # AWS には接続しない（plan・apply は手元で行う。基本設計書 2.2）
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+      - run: terraform fmt -check -diff -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate -no-color
+      - uses: terraform-linters/setup-tflint@v6
+      - run: tflint --init
+        env:
+          # プラグインを GitHub から取るときの回数制限を避ける
+          GITHUB_TOKEN: ${{ github.token }}
+      - run: tflint --format=compact

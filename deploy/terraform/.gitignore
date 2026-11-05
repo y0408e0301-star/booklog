@@ -1,0 +1,7 @@
+# Terraform の作業フォルダと状態ファイル（DB のパスワードなどの秘密の値も入るのでリポジトリに入れない）
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+tfplan
