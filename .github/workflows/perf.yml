@@ -1,0 +1,86 @@
+# 性能テスト（開発計画書 2-2、基本設計書 2.4）を、GitHub の Actions の画面のボタン（Run workflow）で動かす。
+# Pull Request・push では動かさない（時間がかかり、毎回測る必要はないため）。手元で動かすコマンドは README「性能テスト」
+#
+# 測る先（base_url）を空にすると、ランナーの中で PostgreSQL・S3 の代わりの MinIO・jar（perf プロファイル）を起動し、
+# データを入れてから測る。ランナーと公開先（Fargate）は速さが違うので、数値は参考にする。
+# 公開先の URL（CloudFront）を入れると、そこを測る。公開先のデータは先に入れておく
+name: 性能テスト
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 測る先の URL（空ならランナーの中で API を起動して測る。公開先は https://xxxx.cloudfront.net）
+        required: false
+        default: ""
+      runs:
+        description: 画面の項目を測る回数（20 回なら P95 は遅い方から 2 番目）
+        required: false
+        default: "20"
+
+permissions:
+  contents: read
+
+jobs:
+  perf:
+    name: 性能テスト（k6・Playwright）
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PERF_BASE_URL: ${{ inputs.base_url || 'http://localhost:8080' }}
+      PERF_RUNS: ${{ inputs.runs || '20' }}
+      # 写真 4 枚の投稿（N-5）も測る。書籍検索（N-6）は本物の Google Books API と API キーが要るので、ここでは測らない
+      PERF_UPLOAD: "1"
+      # ランナーの中で測るときの S3 の代わり（MinIO）。API（S3_*）と aws コマンド（AWS_*）の両方に渡す
+      S3_BUCKET: bl-photos-perf
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: perf-minio
+      S3_SECRET_KEY: perf-minio-secret
+      AWS_ACCESS_KEY_ID: perf-minio
+      AWS_SECRET_ACCESS_KEY: perf-minio-secret
+      AWS_REGION: ap-northeast-1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+
+      - name: DB・MinIO・jar（perf プロファイル）を起動する
+        if: inputs.base_url == ''
+        uses: ./.github/actions/start-app
+        with:
+          profile: perf
+          database: booklog_perf
+          log: perf/api.log
+
+      - name: データを入れる
+        if: inputs.base_url == ''
+        working-directory: frontend
+        run: npm run perf -- seed
+
+      - name: 測る
+        working-directory: frontend
+        run: npm run perf -- all
+
+      - name: 結果を Actions の画面に出す
+        if: always()
+        run: |
+          if [ -f perf/results/summary.md ]; then cat perf/results/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: perf-results
+          path: |
+            perf/results/
+            perf/api.log
+          if-no-files-found: ignore

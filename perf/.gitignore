@@ -1,0 +1,3 @@
+# 性能テストの結果（frontend で npm run perf -- … が書き出す）と、GitHub Actions で起動した API のログ
+results/
+api.log
