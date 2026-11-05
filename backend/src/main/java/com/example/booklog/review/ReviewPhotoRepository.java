@@ -18,4 +18,8 @@ public interface ReviewPhotoRepository extends JpaRepository<ReviewPhoto, Long> 
 	@Query("select p.storageKey from ReviewPhoto p where p.reviewId = :reviewId")
 	List<String> findStorageKeysByReviewId(@Param("reviewId") long reviewId);
 
+	// その人のレビューの写真すべての置き場所（退会の後で S3 から消すため。BR-14）
+	@Query("select p.storageKey from ReviewPhoto p, Review r where r.id = p.reviewId and r.author.id = :userId")
+	List<String> findStorageKeysByAuthorId(@Param("userId") long userId);
+
 }

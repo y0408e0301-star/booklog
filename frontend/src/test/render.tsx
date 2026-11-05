@@ -41,7 +41,7 @@ type Options = {
 }
 
 export function renderComponent(ui: ReactNode, { path = '/', route = '*', auth = {} }: Options = {}) {
-  const value: Auth = { me, signedIn: vi.fn(), signOut: vi.fn(async () => {}), ...auth }
+  const value: Auth = { me, signedIn: vi.fn(), signOut: vi.fn(async () => {}), signedOut: vi.fn(), ...auth }
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AuthContext value={value}>

@@ -15,7 +15,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
+import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -32,6 +34,7 @@ import org.springframework.web.util.WebUtils;
 
 import com.example.booklog.common.ErrorCode;
 import com.example.booklog.common.ErrorResponse;
+import com.example.booklog.user.UserRepository;
 import com.example.booklog.web.RequestLogFilter;
 
 import jakarta.servlet.FilterChain;
@@ -56,8 +59,8 @@ class SecurityConfig {
 			PathPatternRequestMatcher.pathPattern(HttpMethod.GET, "/api/auth/username-availability"));
 
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, JsonMapper jsonMapper,
-			CsrfTokenRepository csrfTokenRepository) {
+	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, UserRepository users,
+			JsonMapper jsonMapper, CsrfTokenRepository csrfTokenRepository) {
 		AuthenticationEntryPoint unauthorized = (request, response, ex) -> writeError(response, jsonMapper,
 				unauthorized(ex));
 		http.authorizeHttpRequests((authorize) -> authorize.requestMatchers(PUBLIC_API)
@@ -79,7 +82,7 @@ class SecurityConfig {
 				.sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy()))
 			// spa() は Cookie を出すのをトークンが使われるまで遅らせる。画面が最初の GET で受け取れるよう、毎回出す
 			.addFilterAfter(SecurityConfig::loadCsrfToken, CsrfFilter.class)
-			.addFilter(accessTokenFilter(jwtDecoder, unauthorized))
+			.addFilter(accessTokenFilter(jwtDecoder, users, unauthorized))
 			// リクエストのログにログインした人の ID を付ける（基本設計書 2.3）
 			.addFilterAfter(RequestLogFilter::recordUser, BearerTokenAuthenticationFilter.class)
 			.exceptionHandling((exceptions) -> exceptions.authenticationEntryPoint(unauthorized)
@@ -110,10 +113,19 @@ class SecurityConfig {
 	// Cookie の access_token の JWT を確かめて、ログインした人にする。
 	// Spring Security の oauth2ResourceServer() は使わない。あれはトークンを読めたリクエストを CSRF の確認から外す
 	// （Authorization ヘッダーで送る前提のため）が、本アプリは Cookie で送るので、外すと CSRF を防げなくなる
-	private static BearerTokenAuthenticationFilter accessTokenFilter(JwtDecoder jwtDecoder,
+	private static BearerTokenAuthenticationFilter accessTokenFilter(JwtDecoder jwtDecoder, UserRepository users,
 			AuthenticationEntryPoint unauthorized) {
-		BearerTokenAuthenticationFilter filter = new BearerTokenAuthenticationFilter(
-				new ProviderManager(new JwtAuthenticationProvider(jwtDecoder)), SecurityConfig::readAccessToken);
+		// 退会した人の JWT は、期限が残っていても使えない（FN-01 5 章の 9・9 章）
+		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+		JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtDecoder);
+		provider.setJwtAuthenticationConverter((jwt) -> {
+			if (!users.existsById(Long.valueOf(jwt.getSubject()))) {
+				throw new InvalidBearerTokenException("ユーザーがいません");
+			}
+			return converter.convert(jwt);
+		});
+		BearerTokenAuthenticationFilter filter = new BearerTokenAuthenticationFilter(new ProviderManager(provider),
+				SecurityConfig::readAccessToken);
 		filter.setAuthenticationFailureHandler(unauthorized::commence);
 		return filter;
 	}

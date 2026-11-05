@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,13 +22,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.booklog.TestEntities;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.review.ReviewPhotoRepository;
+import com.example.booklog.storage.StorageDeleter;
 import com.example.booklog.user.User;
 import com.example.booklog.user.UserRepository;
 
@@ -50,13 +56,61 @@ class AuthServiceTests {
 	@Mock
 	PasswordEncoder passwordEncoder;
 
+	@Mock
+	ReviewPhotoRepository photos;
+
+	@Mock
+	StorageDeleter storageDeleter;
+
 	private AuthService service;
 
 	@BeforeEach
 	void setUp() {
 		when(this.passwordEncoder.encode("dummy-password-0")).thenReturn(DUMMY_HASH);
-		this.service = new AuthService(this.users, this.refreshTokens, this.tokens, this.passwordEncoder,
-				TestEntities.fixedClock());
+		this.service = new AuthService(this.users, this.refreshTokens, this.tokens, this.passwordEncoder, this.photos,
+				this.storageDeleter, TestEntities.immediateTransaction(), TestEntities.fixedClock());
+	}
+
+	@Nested
+	class 退会 {
+
+		private final User taro = TestEntities.user(1, "taro_y");
+
+		@Test
+		void パスワードが合えば写真の置き場所を読んでから消しS3から消す() {
+			when(AuthServiceTests.this.users.findById(1L)).thenReturn(Optional.of(this.taro));
+			when(AuthServiceTests.this.passwordEncoder.matches("password1", "hash-taro_y")).thenReturn(true);
+			when(AuthServiceTests.this.photos.findStorageKeysByAuthorId(1)).thenReturn(List.of("reviews/a.png"));
+
+			AuthServiceTests.this.service.withdraw(1, "password1");
+
+			InOrder order = inOrder(AuthServiceTests.this.photos, AuthServiceTests.this.users,
+					AuthServiceTests.this.storageDeleter);
+			order.verify(AuthServiceTests.this.photos).findStorageKeysByAuthorId(1);
+			order.verify(AuthServiceTests.this.users).delete(this.taro);
+			order.verify(AuthServiceTests.this.storageDeleter).deleteOrRecord(List.of("reviews/a.png"));
+		}
+
+		// TC-01-16：失敗の回数を増やさない
+		@Test
+		void パスワードが違えばPASSWORD_WRONGで何も変えない() {
+			when(AuthServiceTests.this.users.findById(1L)).thenReturn(Optional.of(this.taro));
+			when(AuthServiceTests.this.passwordEncoder.matches("wrong", "hash-taro_y")).thenReturn(false);
+
+			assertApiError(() -> AuthServiceTests.this.service.withdraw(1, "wrong"), ErrorCode.PASSWORD_WRONG,
+					"password");
+			assertApiError(() -> AuthServiceTests.this.service.withdraw(1, null), ErrorCode.PASSWORD_WRONG, "password");
+			assertThat(ReflectionTestUtils.getField(this.taro, "failedLoginCount")).isEqualTo((short) 0);
+			verifyNoInteractions(AuthServiceTests.this.photos, AuthServiceTests.this.storageDeleter);
+			verify(AuthServiceTests.this.users, never()).delete(any());
+		}
+
+		@Test
+		void もうユーザーがいなければUNAUTHENTICATED() {
+			when(AuthServiceTests.this.users.findById(1L)).thenReturn(Optional.empty());
+			assertApiError(() -> AuthServiceTests.this.service.withdraw(1, "password1"), ErrorCode.UNAUTHENTICATED);
+		}
+
 	}
 
 	@Nested

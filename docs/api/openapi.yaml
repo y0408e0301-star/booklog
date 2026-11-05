@@ -18,6 +18,7 @@ info:
     | UNAUTHENTICATED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
     | TOKEN_EXPIRED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
     | REFRESH_FAILED | 401 | ログインの有効期限が切れました。もう一度ログインしてください。 |
+    | PASSWORD_WRONG | 400 | パスワードが違います。 |
     | QUERY_REQUIRED | 400 | ISBN か書名を入力してください。 |
     | BOOK_SEARCH_UNAVAILABLE | 503 | 本の検索がいまできません。時間をおいてもう一度お試しください。 |
     | GOOGLE_BOOK_NOT_FOUND | 404 | この本は見つかりません。 |
@@ -518,6 +519,34 @@ paths:
       summary: コメントを削除する
       tags:
       - FN-06 コメント
+  /api/me:
+    delete:
+      description: パスワードを確かめ、その人のデータをすべて消して、Cookie も消す。本は消さない。元に戻せない
+      operationId: withdraw
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawRequest"
+        required: true
+      responses:
+        "204":
+          description: 退会した
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 退会する
+      tags:
+      - FN-01 ユーザー登録・ログイン
   /api/me/profile:
     patch:
       description: 変えられるのはログインした人のプロフィールだけ
@@ -1713,6 +1742,13 @@ components:
           type: boolean
       required:
       - available
+    WithdrawRequest:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+      - password
   securitySchemes:
     accessToken:
       description: ログイン（POST /api/auth/login）で受け取る JWT の Cookie（機能定義書 3.2）。GET 以外では、Cookie

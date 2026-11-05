@@ -8,6 +8,8 @@ export type Auth = {
   signedIn: (me: Me) => void
   // ログアウトして G-1 に移す
   signOut: () => Promise<void>
+  // 退会したとき（G-13）に呼ぶ。API は呼ばずに G-1 に移す
+  signedOut: () => void
 }
 
 export const AuthContext = createContext<Auth | null>(null)

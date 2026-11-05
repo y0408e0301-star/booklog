@@ -272,6 +272,17 @@ describe('プロフィールの編集画面（G-9）', () => {
     expect(fetch.keys()).not.toContain('PATCH /api/me/profile')
   })
 
+  // PF-8・A-10
+  it('いちばん下の「退会する」で G-13 を開き、「キャンセル」で閉じる', async () => {
+    await renderEdit()
+    expect(screen.getByRole('region', { name: '退会' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '退会する' }))
+    const dialog = screen.getByRole('alertdialog', { name: '退会' })
+    await userEvent.click(within(dialog).getByRole('button', { name: 'キャンセル' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '退会する' })).toHaveFocus()
+  })
+
   it('読み込みに失敗したら M-29 と「再読み込み」', async () => {
     mockFetch({ 'GET /api/users/taro_y': [() => json(500, {}), () => json(200, myProfile)] })
     renderComponent(<EditProfilePage />)

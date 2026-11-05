@@ -19,7 +19,7 @@ function LoginPage() {
 function renderAt(path: string, current: Me | null | undefined) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <AuthContext value={{ me: current, signedIn: vi.fn(), signOut: vi.fn(async () => {}) }}>
+      <AuthContext value={{ me: current, signedIn: vi.fn(), signOut: vi.fn(async () => {}), signedOut: vi.fn() }}>
         <Routes>
           <Route element={<GuestOnly />}>
             <Route path="/login" element={<LoginPage />} />

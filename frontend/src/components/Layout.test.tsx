@@ -15,7 +15,7 @@ const me: Me = { username: 'taro_y', displayName: 'たろう' }
 function renderLayout(path: string, signOut = vi.fn(async () => {})) {
   render(
     <MemoryRouter initialEntries={[path]}>
-      <AuthContext value={{ me, signedIn: vi.fn(), signOut }}>
+      <AuthContext value={{ me, signedIn: vi.fn(), signOut, signedOut: vi.fn() }}>
         <ToastProvider>
           <Routes>
             <Route element={<Layout />}>

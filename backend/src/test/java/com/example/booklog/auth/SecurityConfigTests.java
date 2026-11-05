@@ -23,6 +23,7 @@ import com.example.booklog.ControllerTest;
 import com.example.booklog.MutableClock;
 import com.example.booklog.TestEntities;
 import com.example.booklog.common.ErrorCode;
+import com.example.booklog.user.UserRepository;
 
 import jakarta.servlet.http.Cookie;
 
@@ -42,15 +43,26 @@ class SecurityConfigTests {
 	@MockitoBean
 	AuthService authService;
 
+	@MockitoBean
+	UserRepository users;
+
 	@BeforeEach
 	void setUp() {
 		this.clock.reset();
 		when(this.authService.me(1)).thenReturn(new AuthService.Me("taro_y", "たろう"));
+		when(this.users.existsById(1L)).thenReturn(true);
 	}
 
 	@Test
 	void 正しいJWTのCookieがあればログインしている() {
 		assertThat(me(accessToken())).hasStatusOk().bodyJson().extractingPath("$.username").isEqualTo("taro_y");
+	}
+
+	// TC-01-15
+	@Test
+	void 退会した人のJWTは期限が残っていても401のUNAUTHENTICATED() {
+		when(this.users.existsById(1L)).thenReturn(false);
+		assertError(me(accessToken()), ErrorCode.UNAUTHENTICATED);
 	}
 
 	@Test
