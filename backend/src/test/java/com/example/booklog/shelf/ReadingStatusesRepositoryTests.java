@@ -138,6 +138,19 @@ class ReadingStatusesRepositoryTests {
 		assertThat(kokoro.rating()).isNull();
 	}
 
+	// FN-11 の bookshelfCounts：その人の分だけ数え、1 冊もないステータスは 0
+	@Test
+	void ステータスごとの冊数を数える() {
+		assertThat(this.statuses.counts(this.taro.getId())).isEqualTo(new BookshelfCounts(0, 0, 0));
+
+		this.statuses.set(this.taro.getId(), this.neko.getId(), ReadingStatus.READ);
+		this.statuses.set(this.taro.getId(), this.kokoro.getId(), ReadingStatus.READ);
+		this.statuses.set(this.hanako.getId(), this.neko.getId(), ReadingStatus.WANT);
+
+		assertThat(this.statuses.counts(this.taro.getId())).isEqualTo(new BookshelfCounts(0, 0, 2));
+		assertThat(this.statuses.counts(this.hanako.getId())).isEqualTo(new BookshelfCounts(1, 0, 0));
+	}
+
 	private Instant updatedAt() {
 		return this.jdbc.queryForObject("SELECT updated_at FROM reading_statuses", Timestamp.class).toInstant();
 	}

@@ -191,6 +191,14 @@ class ReviewService {
 		return page(this.reviews.findByBookBefore(bookId, parseCursor(cursor), Limit.of(PAGE_SIZE + 1)), viewerId);
 	}
 
+	// プロフィールのレビューの一覧：その人のレビューを新しい順に 20 件ずつ（FN-11 PF-4）
+	@Transactional(readOnly = true)
+	ReviewPage listByUser(long viewerId, String username, @Nullable String cursor) {
+		long before = parseCursor(cursor);
+		User user = this.users.findByUsername(username).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+		return page(this.reviews.findByAuthorBefore(user.getId(), before, Limit.of(PAGE_SIZE + 1)), viewerId);
+	}
+
 	// タイムライン（FN-09）：「フォロー中」は自分とフォローしている人、「すべて」は全員のレビューを、新しい順に 20 件ずつ
 	@Transactional(readOnly = true)
 	ReviewPage timeline(long viewerId, @Nullable String tab, @Nullable String cursor) {

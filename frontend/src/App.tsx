@@ -5,15 +5,16 @@ import Layout from './components/Layout'
 import { ToastProvider } from './components/ToastProvider'
 import BookPage from './pages/BookPage'
 import BookSearchPage from './pages/BookSearchPage'
+import EditProfilePage from './pages/EditProfilePage'
 import FollowListPage from './pages/FollowListPage'
 import HomePage from './pages/HomePage'
+import ProfilePage from './pages/ProfilePage'
 import ReviewFormPage from './pages/ReviewFormPage'
 import ReviewPage from './pages/ReviewPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 
-// 画面と URL（画面一覧 1 章）。BrowserRouter（テストでは MemoryRouter）の中で使う。
-// G-8〜G-10 は、それぞれの機能を作るときに足す（開発計画書 3.1）
+// 画面と URL（画面一覧 1 章）。BrowserRouter（テストでは MemoryRouter）の中で使う
 export default function App() {
   return (
     <AuthProvider>
@@ -31,6 +32,8 @@ export default function App() {
               <Route path="/books/:id" element={<BookPage />} />
               <Route path="/books/:id/review" element={<ReviewFormPage />} />
               <Route path="/reviews/:id" element={<ReviewPage />} />
+              <Route path="/users/:username" element={<ProfilePage />} />
+              <Route path="/settings/profile" element={<EditProfilePage />} />
               <Route path="/users/:username/following" element={<FollowListPage kind="following" />} />
               <Route path="/users/:username/followers" element={<FollowListPage kind="followers" />} />
             </Route>

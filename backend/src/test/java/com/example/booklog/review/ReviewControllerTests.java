@@ -186,6 +186,16 @@ class ReviewControllerTests {
 	}
 
 	@Test
+	void その人のレビューの一覧はcursorを渡す() {
+		when(this.reviewService.listByUser(1, "hanako", "80"))
+			.thenReturn(new ReviewService.ReviewPage(List.of(VIEW), "79"));
+		assertThat(this.mvc.get().uri("/api/users/hanako/reviews?cursor=80").with(loggedIn(1))).hasStatusOk()
+			.bodyJson()
+			.extractingPath("$.nextCursor")
+			.isEqualTo("79");
+	}
+
+	@Test
 	void タイムラインはタブとcursorを渡す() {
 		when(this.reviewService.timeline(1, "following", "80"))
 			.thenReturn(new ReviewService.ReviewPage(List.of(VIEW), "79"));

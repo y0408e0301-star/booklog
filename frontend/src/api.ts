@@ -322,6 +322,18 @@ export async function removeReadingStatus(bookId: number): Promise<void> {
   await request('DELETE', `/api/books/${bookId}/status`)
 }
 
+// 本棚の 1 冊。rating はその人がその本に書いたレビューの星で、なければ null（FN-08 6 章）
+export type ShelfItem = Schemas['ShelfItem']
+
+// ステータスを付けた（変えた）日時の新しい順に 20 冊ずつ。nextCursor が null なら続きはない（ST-5）
+export type ShelfPage = Schemas['ShelfPage']
+
+export function fetchBookshelf(username: string, status: ReadingStatus, cursor: string | null = null): Promise<ShelfPage> {
+  const query = new URLSearchParams({ status })
+  if (cursor !== null) query.set('cursor', cursor)
+  return requestJson<ShelfPage>('GET', `/api/users/${encodeURIComponent(username)}/bookshelf?${query}`)
+}
+
 // ---------------------------------------------------------------- FN-09 タイムライン
 
 export type Tab = NonNullable<NonNullable<operations['readTimeline']['parameters']['query']>['tab']>
@@ -331,6 +343,26 @@ export function fetchTimeline(tab: Tab, cursor: string | null = null): Promise<R
   const query = new URLSearchParams({ tab })
   if (cursor !== null) query.set('cursor', cursor)
   return requestJson<ReviewPage>('GET', `/api/timeline?${query}`)
+}
+
+// ---------------------------------------------------------------- FN-11 プロフィール
+
+// プロフィール（FN-11 6 章）。件数は開いたときに数えたもの、me は自分か
+export type Profile = Schemas['ProfileView']
+
+export function fetchProfile(username: string): Promise<Profile> {
+  return requestJson<Profile>('GET', `/api/users/${encodeURIComponent(username)}`)
+}
+
+// その人のレビューを新しい順に 20 件ずつ（PF-4）
+export function fetchUserReviews(username: string, cursor: string | null = null): Promise<ReviewPage> {
+  const query = cursor === null ? '' : `?${new URLSearchParams({ cursor })}`
+  return requestJson<ReviewPage>('GET', `/api/users/${encodeURIComponent(username)}/reviews${query}`)
+}
+
+// 自分の表示名と自己紹介を変える（PF-6）。どちらもトリムした後のものを送る
+export function editProfile(displayName: string, bio: string): Promise<Profile> {
+  return requestJson<Profile>('PATCH', '/api/me/profile', { displayName, bio } satisfies Schemas['EditProfileRequest'])
 }
 
 // ---------------------------------------------------------------- 画面の URL（画面一覧 1 章）
@@ -349,6 +381,9 @@ export const reviewUrl = (id: number) => `/reviews/${id}`
 
 // G-8 プロフィール画面
 export const profileUrl = (username: string) => `/users/${encodeURIComponent(username)}`
+
+// G-9 プロフィールの編集画面
+export const PROFILE_EDIT_URL = '/settings/profile'
 
 // G-10 フォロー中・フォロワーの一覧画面
 export const followListUrl = (username: string, kind: FollowListKind) => `${profileUrl(username)}/${kind}`

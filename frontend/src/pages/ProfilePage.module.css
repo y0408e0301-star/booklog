@@ -1,0 +1,42 @@
+/* G-8 プロフィール画面（画面設計書 10 章） */
+.head { padding: 16px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.action { flex: none; }
+.edit:hover { text-decoration: none; }
+.name { margin: 8px 0 0; font-size: 20px; overflow-wrap: anywhere; }
+.username { margin: 0; color: var(--sub); }
+/* 自己紹介の改行はそのまま出す（PF-2） */
+.bio { margin: 8px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.counts { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 8px 0 0; color: var(--sub); }
+.counts a { color: inherit; }
+.counts b { color: var(--text); }
+
+/* 本棚の小さなタブ（ST-4） */
+.shelves { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px 4px; }
+.shelf { padding: 4px 12px; border-radius: 16px; border: 1px solid var(--line); color: var(--sub); }
+.shelf:hover { background: var(--hover); text-decoration: none; }
+.shelfActive { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: bold; }
+.shelfActive:hover { background: var(--primary); }
+
+/* 本棚の一覧：3 列に並べる（画面設計書 10 章） */
+.books {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px 12px;
+  list-style: none; margin: 0; padding: 12px 16px;
+}
+.book { display: flex; flex-direction: column; gap: 4px; color: inherit; }
+.book:hover { text-decoration: none; }
+.book:hover .bookTitle { text-decoration: underline; }
+/* 書名は 2 行まで、著者は 1 行まで */
+.bookTitle {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  overflow: hidden; overflow-wrap: anywhere; font-weight: bold;
+}
+.bookAuthors { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--sub); }
+
+/* G-9 プロフィールの編集画面（画面設計書 11 章） */
+.nameInput {
+  display: block; width: 100%; height: 40px; padding: 0 10px; font-size: 15px; color: var(--text);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+}
+.nameInput:focus { outline: 2px solid var(--primary); border-color: transparent; }
+textarea.bioInput { min-height: calc(3 * 1.5em + 18px); }

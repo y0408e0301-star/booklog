@@ -518,6 +518,38 @@ paths:
       summary: コメントを削除する
       tags:
       - FN-06 コメント
+  /api/me/profile:
+    patch:
+      description: 変えられるのはログインした人のプロフィールだけ
+      operationId: editProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditProfileRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileView"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: 表示名と自己紹介を変える
+      tags:
+      - FN-11 プロフィール
   /api/photos/urls:
     post:
       description: 削除された写真は結果に入らない
@@ -832,6 +864,38 @@ paths:
       summary: タイムライン
       tags:
       - FN-09 タイムライン
+  /api/users/{username}:
+    get:
+      description: 件数は開いたときに数える
+      operationId: getProfile
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileView"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: プロフィール
+      tags:
+      - FN-11 プロフィール
   /api/users/{username}/bookshelf:
     get:
       description: ステータスを付けた（変えた）日時の新しい順に 20 冊ずつ。誰の本棚でも見られる
@@ -1019,6 +1083,44 @@ paths:
       summary: フォロー中の一覧
       tags:
       - FN-07 フォロー
+  /api/users/{username}/reviews:
+    get:
+      description: 新しい順に 20 件ずつ
+      operationId: listUserReviews
+      parameters:
+      - in: path
+        name: username
+        required: true
+        schema:
+          type: string
+      - description: 前回の nextCursor。最初は省く
+        in: query
+        name: cursor
+        required: false
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewPage"
+          description: OK
+        "4XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 入力の誤り・ログインが必要・見つからないなど（code は API の説明のエラーの一覧）
+        "5XX":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: 思いがけない失敗
+      summary: その人のレビューの一覧
+      tags:
+      - FN-11 プロフィール
 components:
   schemas:
     Author:
@@ -1165,6 +1267,22 @@ components:
       - id
       - thumbnailUrl
       - title
+    BookshelfCounts:
+      type: object
+      properties:
+        READ:
+          type: integer
+          format: int64
+        READING:
+          type: integer
+          format: int64
+        WANT:
+          type: integer
+          format: int64
+      required:
+      - READ
+      - READING
+      - WANT
     CommentPage:
       type: object
       properties:
@@ -1208,6 +1326,16 @@ components:
           description: 改行を LF にそろえ、前後の空白を除いて 1〜500 文字（C-2）
       required:
       - body
+    EditProfileRequest:
+      type: object
+      properties:
+        bio:
+          type: string
+        displayName:
+          type: string
+      required:
+      - bio
+      - displayName
     EditReviewForm:
       type: object
       properties:
@@ -1324,6 +1452,40 @@ components:
       - expiresAt
       - id
       - url
+    ProfileView:
+      type: object
+      properties:
+        bio:
+          type: string
+        bookshelfCounts:
+          $ref: "#/components/schemas/BookshelfCounts"
+        displayName:
+          type: string
+        followedByMe:
+          type: boolean
+        followerCount:
+          type: integer
+          format: int64
+        followingCount:
+          type: integer
+          format: int64
+        me:
+          type: boolean
+        reviewCount:
+          type: integer
+          format: int64
+        username:
+          type: string
+      required:
+      - bio
+      - bookshelfCounts
+      - displayName
+      - followedByMe
+      - followerCount
+      - followingCount
+      - me
+      - reviewCount
+      - username
     ReviewForm:
       type: object
       properties:

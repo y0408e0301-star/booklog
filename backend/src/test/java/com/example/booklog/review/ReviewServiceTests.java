@@ -409,6 +409,21 @@ class ReviewServiceTests {
 		assertApiError(() -> this.service.timeline(1, "all", "x"), ErrorCode.BAD_REQUEST);
 	}
 
+	// FN-11 PF-4
+	@Test
+	void その人のレビューの一覧はcursorを渡す() {
+		when(this.users.findByUsername("hanako")).thenReturn(Optional.of(this.hanako));
+		when(this.reviews.findByAuthorBefore(2, 80, Limit.of(21))).thenReturn(List.of(review(79, this.hanako)));
+
+		assertThat(this.service.listByUser(1, "hanako", "80").items()).extracting(ReviewView::id).containsExactly(79L);
+	}
+
+	@Test
+	void いないユーザーのレビューの一覧はUSER_NOT_FOUND() {
+		when(this.users.findByUsername("nobody")).thenReturn(Optional.empty());
+		assertApiError(() -> this.service.listByUser(1, "nobody", null), ErrorCode.USER_NOT_FOUND);
+	}
+
 	private Review review(long id, User author) {
 		return TestEntities.withId(new Review(author, this.book, INPUT, TestEntities.NOW.minusSeconds(60)), id);
 	}

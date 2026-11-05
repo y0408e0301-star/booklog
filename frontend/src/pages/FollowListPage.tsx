@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ApiError, fetchFollowList, followListUrl, profileUrl, type FollowListKind, type UserSummary } from '../api'
+import {
+  ApiError, fetchFollowList, fetchProfile, followListUrl, profileUrl, type FollowListKind, type UserSummary,
+} from '../api'
 import ui from '../components/ui.module.css'
 import UserRow from '../components/UserRow'
 import { M } from '../messages'
@@ -21,15 +23,34 @@ type List = {
 
 const initialList: List = { items: [], nextCursor: null, status: 'loading' }
 
-// G-10 フォロー中・フォロワーの一覧画面（画面設計書 12 章、FN-07 F-5〜F-7）。
-// 見出しの表示名は、ユーザーの情報の API（FN-11）ができる開発計画書 1-11 で出す。それまでは @ユーザー ID を出す
+// G-10 フォロー中・フォロワーの一覧画面（画面設計書 12 章、FN-07 F-5〜F-7）
 export default function FollowListPage({ kind }: { kind: FollowListKind }) {
   const { username = '' } = useParams()
+  // 見出しの表示名。どのユーザーのものかも持つ（タブを替えても読み直さない）
+  const [named, setNamed] = useState<{ username: string, displayName: string } | null>(null)
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const { displayName } = await fetchProfile(username)
+        if (active) setNamed({ username, displayName })
+      } catch {
+        // 読めなくても一覧には困らない。見出しは @ユーザー ID のままにする（いないユーザーの M-28 は一覧で出す）
+      }
+    }
+    void load()
+    return () => {
+      active = false
+    }
+  }, [username])
+
+  const title = named?.username === username ? named.displayName : `@${username}`
   // ユーザーかタブが替わったら一覧を作り直す
-  return <FollowList key={`${username}:${kind}`} username={username} kind={kind} />
+  return <FollowList key={`${username}:${kind}`} username={username} kind={kind} title={title} />
 }
 
-function FollowList({ username, kind }: { username: string, kind: FollowListKind }) {
+function FollowList({ username, kind, title }: { username: string, kind: FollowListKind, title: string }) {
   const navigate = useNavigate()
   const [list, setList] = useState<List>(initialList)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -80,7 +101,7 @@ function FollowList({ username, kind }: { username: string, kind: FollowListKind
         {/* 「←」でその人の G-8 */}
         <button type="button" className={styles.back} aria-label="プロフィールに戻る"
           onClick={() => navigate(profileUrl(username))}>←</button>
-        <h1>@{username}</h1>
+        <h1>{title}</h1>
       </div>
       {/* タブは URL の /following・/followers と合わせる */}
       <nav className={tabStyles.tabs} aria-label="フォロー中・フォロワー">

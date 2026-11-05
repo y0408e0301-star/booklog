@@ -40,6 +40,17 @@ public class ReadingStatuses {
 		return found.isEmpty() ? null : ReadingStatus.valueOf(found.get(0));
 	}
 
+	// ステータスごとの冊数（FN-11 の bookshelfCounts）。1 冊もないステータスは 0
+	public BookshelfCounts counts(long userId) {
+		return this.jdbc.queryForObject("""
+				SELECT count(*) FILTER (WHERE status = 'WANT') AS want,
+				       count(*) FILTER (WHERE status = 'READING') AS reading,
+				       count(*) FILTER (WHERE status = 'READ') AS read
+				FROM reading_statuses WHERE user_id = ?
+				""", (rs, row) -> new BookshelfCounts(rs.getLong("want"), rs.getLong("reading"), rs.getLong("read")),
+				userId);
+	}
+
 	// 付ける・変える（ST-2）。同じステータスなら updated_at を変えず、本棚の並び順を変えない（FN-08 5 章の 3）
 	void set(long userId, long bookId, ReadingStatus status) {
 		this.jdbc.update("""

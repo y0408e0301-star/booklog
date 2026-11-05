@@ -91,6 +91,14 @@ class ReviewController {
 		return this.reviewService.listByBook(userId(jwt), bookId, cursor);
 	}
 
+	@Tag(name = "FN-11 プロフィール")
+	@Operation(operationId = "listUserReviews", summary = "その人のレビューの一覧", description = "新しい順に 20 件ずつ")
+	@GetMapping("/api/users/{username}/reviews")
+	ReviewService.ReviewPage listByUser(@AuthenticationPrincipal Jwt jwt, @PathVariable String username,
+			@Parameter(description = "前回の nextCursor。最初は省く") @RequestParam(required = false) @Nullable String cursor) {
+		return this.reviewService.listByUser(userId(jwt), username, cursor);
+	}
+
 	@Tag(name = "FN-09 タイムライン")
 	@Operation(operationId = "readTimeline", summary = "タイムライン",
 			description = "following は自分とフォローしている人、all は全員のレビュー。新しい順に 20 件ずつ")

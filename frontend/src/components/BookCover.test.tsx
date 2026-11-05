@@ -4,6 +4,11 @@ import BookCover from './BookCover'
 
 // 本の表紙（画面設計書 2.9、FN-02 B-7）
 describe('BookCover', () => {
+  it('G-8 の本棚では列の幅いっぱいに出す', () => {
+    render(<BookCover title="こころ" thumbnailUrl={null} width="full" />)
+    expect(screen.getByText('表紙なし')).toHaveStyle({ width: '100%' })
+  })
+
   it('表紙の URL があれば、幅の 1.5 倍の高さで出す', () => {
     render(<BookCover title="こころ" thumbnailUrl="https://books.google.com/a" width={64} />)
     const img = screen.getByRole('img', { name: 'こころの表紙' })

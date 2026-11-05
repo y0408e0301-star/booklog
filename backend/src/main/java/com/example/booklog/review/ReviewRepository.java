@@ -37,6 +37,17 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 			""")
 	List<Review> findFollowingBefore(@Param("me") long me, @Param("cursor") long cursor, Limit limit);
 
+	// プロフィールのレビューの一覧：その人のレビューを、cursor より古いものから新しい順に（PF-4、FN-09 5 章の 2）。
+	// 索引 (user_id, id DESC) を使う
+	@Query("""
+			select r from Review r join fetch r.author a join fetch r.book
+			where a.id = :userId and r.id < :cursor
+			order by r.id desc
+			""")
+	List<Review> findByAuthorBefore(@Param("userId") long userId, @Param("cursor") long cursor, Limit limit);
+
+	long countByAuthorId(long authorId);
+
 	// 同じ本のレビューをもう書いているか（RV-1、BR-2）
 	@Query("select count(r) > 0 from Review r where r.author.id = :userId and r.book.id = :bookId")
 	boolean existsByAuthorAndBook(@Param("userId") long userId, @Param("bookId") long bookId);
