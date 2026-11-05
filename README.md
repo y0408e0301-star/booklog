@@ -7,7 +7,7 @@
 - 作る順番と進み具合：[開発計画書](docs/development-plan.md)
 - 開発ルール：[CONTRIBUTING.md](CONTRIBUTING.md)
 
-いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン、レビューの写真、読書ステータスと本棚の API、参考になった、コメント、フォロー、プロフィール、退会（開発計画書 1-1〜1-12）まで作っています。公開の手順は、作ったときに足します。
+いまは API サーバーと画面の土台、ユーザー登録・ログイン、書籍検索と本の取り込み、レビュー、タイムライン、レビューの写真、読書ステータスと本棚の API、参考になった、コメント、フォロー、プロフィール、退会（開発計画書 1-1〜1-12）と、画面を通したテスト（2-1）まで作っています。公開の手順は、作ったときに足します。
 
 ## 起動方法
 
@@ -87,8 +87,9 @@ npm ci
 | --- | --- | --- |
 | API サーバー | `backend` で `.\mvnw.cmd verify` | テスト（下の「API サーバーのテストの種類」）、書式チェック（spring-javaformat。直すときは `.\mvnw.cmd spring-javaformat:apply`）、静的解析（SpotBugs）。API の仕様書（docs/api/openapi.yaml）がコードと違えば、書き直して失敗する |
 | 画面 | `frontend` で `npm run lint` → `npm test` → `npm run build` | lint（oxlint。React Hooks の決まり・アクセシビリティを含む）、テスト（Vitest・Testing Library。下の「画面のテスト」）、型チェックとビルド |
+| 画面を通したテスト | `frontend` で `npm run test:e2e` | Playwright で、主な流れ・各機能のシナリオ・権限・ログインの続き・全画面のアクセシビリティと横幅を画面から確かめる（下の「画面を通したテスト」） |
 
-Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）が上の 2 つと、画面の API の型が仕様書と同じかを自動で確かめます。push の前に、手元で両方を流し直してください（[開発計画書 5 章](docs/development-plan.md)）。
+Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）が上の 3 つと、画面の API の型が仕様書と同じかを自動で確かめます。push の前に、手元で両方を流し直してください（[開発計画書 5 章](docs/development-plan.md)）。
 
 ### API サーバーのテストの種類
 
@@ -115,6 +116,50 @@ Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml]
 | 関数のテスト | `api.test.ts`・`validation.test.ts` | API の URL・メソッド・送る形、CSRF のヘッダー、JWT の取り直し（同時に 401 でも 1 回だけ）、入力の条件と境界値 |
 | 部品のテスト | `components/*.test.tsx`・`auth/*.test.tsx` | ヘッダー・トースト・通信切れのお知らせ・ログインの状態と移り先 |
 | 画面のテスト | `pages/*.test.tsx`・`App.test.tsx` | 機能定義書 10 章の観点のうち画面で確かめるもの（メッセージの出し方、押せる・押せない、移り先） |
+
+### 画面を通したテスト（E2E テスト）
+
+[frontend/e2e](frontend/e2e) のテストは、Playwright でブラウザ（パソコンに入っている Microsoft Edge）を動かし、本物の API と DB につないで、利用者の操作の流れ（シナリオ）を確かめます。何人かのユーザーを別々のブラウザで操作し、操作の後に API で読んだ DB の中身と、相手の画面も確かめます。Google Books API だけは、本物を呼ばずに偽物（`e2e/fake-google-books.ts`）を呼びます（[技術スタック定義書 5.4](docs/tech-stack.md#54-e2e-での-google-books-api-の偽物)）。
+
+| ファイル | 確かめること |
+| --- | --- |
+| `main-flow.spec.ts` | 主な流れ（登録 → 本を探す → レビュー → フォロー → 参考になった・コメント）、ログアウトとログインし直し |
+| `books.spec.ts` | ISBN・「もっと見る」・0 件・Google Books API の障害（M-14）、本の情報の HTML の記号、API キーが画面に出ない、平均評価、読書ステータス |
+| `reviews.spec.ts` | 入力の条件、編集・削除と確認ダイアログ、ネタバレ、「続きを読む」、写真（4 枚まで・拡大・削除で S3 からも消える） |
+| `social.spec.ts` | 参考になった、コメント、フォロー・解除と G-10、タイムラインのタブと続きの読み込み |
+| `profile.spec.ts` | プロフィール・本棚のタブ、G-9 の編集、M-28、退会 |
+| `security.spec.ts` | ログインしていないと使えない、他人のものを画面からも API からも変えられない、CSRF、HTML が文字のまま出る、5 回の失敗でロック |
+| `session.spec.ts` | JWT が切れてもリフレッシュトークンで使い続けられる、ログアウト後・使い回したリフレッシュトークンは使えない、通信切れのお知らせ |
+| `screens.spec.ts` | すべての画面（G-1〜G-13）に、アクセシビリティの違反（axe-core。WCAG 2.1 の A・AA）と横のスクロールがない |
+
+画面の幅は 2 通りで動かします（[playwright.config.ts](frontend/playwright.config.ts) の projects）。`pc`（1280px）ではすべてを、`mobile`（375px）では `main-flow.spec.ts` と `screens.spec.ts` を動かします。
+
+使い方：
+
+1. データベースと画面を「起動する」のとおりに起動します
+2. API サーバーは、Google Books API の接続先を偽物に向けて起動します。ふだんの開発で本物の検索を使うときは、起動し直してください
+
+   ```
+   cd backend
+   $env:GOOGLE_BOOKS_BASE_URL = "http://localhost:9100"
+   .\mvnw.cmd spring-boot:run
+   ```
+
+3. `frontend` で `npm run test:e2e` を実行します（2 分ほど）。偽物（9100）は Playwright が起動します。1 つのファイルだけなら `npm run test:e2e -- reviews`、片方の幅だけなら `-- --project=pc`
+
+- 行き先は既定で画面の Vite（5173）です。環境変数 `E2E_BASE_URL` で変えられます（CI は jar の 8080）
+- 環境変数 `E2E_BROWSERS=all` を付けると、Edge に加えて Chrome・Firefox・WebKit（Safari の代わり）・iPhone と Android のエミュレーションでも流します（Firefox と WebKit は先に `npx playwright install firefox webkit`）
+- テストは開発用の DB にユーザーと本を作ります。ユーザー ID は `e2e_`、本の ID は `e2e-` で始まり、テストを始める前と終わった後に `docker compose exec` で DB から消します
+- 写真を使うテストは S3 の開発用のバケットに写真を置き、テストの中でレビューを消す・退会して消します。テストが途中で失敗すると、写真が残ることがあります
+- 落ちたテストは `frontend/test-results/` にトレースが残ります。`npx playwright show-trace <trace.zip のパス>` で、操作ごとの画面を見られます
+
+### 画面も入れた jar
+
+E2E の CI では、画面も入れた jar 1 つでアプリを動かします（公開先の画面は CloudFront が配るので、この jar の画面は使いません）。
+
+1. `frontend` で `npm run build`
+2. `backend` で `.\mvnw.cmd clean package -Pwith-frontend`（画面をビルドしていなければ止まります）
+3. `java -jar target\backend-0.0.1-SNAPSHOT.jar` で起動すると、http://localhost:8080/ で画面も使えます（API サーバーと同じ 8080 なので、開発用の API サーバーは止めておきます）
 
 ## API の仕様書（OpenAPI）
 

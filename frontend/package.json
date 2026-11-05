@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint --deny-warnings",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "preview": "vite preview",
     "gen:api": "openapi-typescript ../docs/api/openapi.yaml -o src/api-schema.d.ts"
   },
@@ -17,6 +18,8 @@
     "react-router": "7.18.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",

@@ -220,4 +220,63 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<!-- 画面も入れた jar（開発計画書 2-1。E2E で使う）：画面（frontend/dist）を jar の static/ に入れる。
+			 jar 1 つで API と画面を配る。先に frontend で npm run build してから、mvnw package -Pwith-frontend。
+			 ふだんの mvnw verify・開発（画面は Vite の 5173）では使わない -->
+		<profile>
+			<id>with-frontend</id>
+			<build>
+				<plugins>
+					<!-- 画面をビルドし忘れたまま、画面のない jar を作らないよう止める。
+						 コピーした後で確かめる（requireFilesExist は「..」を含むパスを、ないものとして扱うため） -->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>require-frontend-build</id>
+								<phase>prepare-package</phase>
+								<goals>
+									<goal>enforce</goal>
+								</goals>
+								<configuration>
+									<rules>
+										<requireFilesExist>
+											<files>
+												<file>${project.build.outputDirectory}/static/index.html</file>
+											</files>
+											<message>画面がビルドされていません。先に frontend で npm run build を実行してください</message>
+										</requireFilesExist>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-resources-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>copy-frontend</id>
+								<phase>process-resources</phase>
+								<goals>
+									<goal>copy-resources</goal>
+								</goals>
+								<configuration>
+									<outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+									<resources>
+										<resource>
+											<directory>${project.basedir}/../frontend/dist</directory>
+										</resource>
+									</resources>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>
