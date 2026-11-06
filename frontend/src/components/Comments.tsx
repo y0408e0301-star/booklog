@@ -39,6 +39,7 @@ export default function Comments({ reviewId, count, onCountChange, onReviewDelet
   const headingId = useId()
   const [list, setList] = useState<List>({ status: 'loading' })
   const [loadingMore, setLoadingMore] = useState(false)
+  const [moreFailed, setMoreFailed] = useState(false)
   const [deleting, setDeleting] = useState<CommentView | null>(null)
 
   useEffect(() => {
@@ -65,13 +66,14 @@ export default function Comments({ reviewId, count, onCountChange, onReviewDelet
   async function loadMore() {
     if (list.status !== 'loaded' || list.nextCursor === null || loadingMore) return
     setLoadingMore(true)
+    setMoreFailed(false)
     try {
       const page = await fetchComments(reviewId, list.nextCursor)
       setList((prev) => prev.status === 'loaded'
         ? { status: 'loaded', items: merge(prev.items, page.items), nextCursor: page.nextCursor }
         : prev)
     } catch {
-      toast(M[29])
+      setMoreFailed(true)
     } finally {
       setLoadingMore(false)
     }
@@ -119,7 +121,13 @@ export default function Comments({ reviewId, count, onCountChange, onReviewDelet
               <CommentItem key={comment.id} comment={comment} onDelete={() => setDeleting(comment)} />
             ))}
           </ul>
-          {list.nextCursor !== null && (
+          {list.nextCursor !== null && moreFailed && (
+            <div className={styles.state} role="alert">
+              <p>{M[29]}</p>
+              <button type="button" className={ui.secondary} onClick={loadMore}>再読み込み</button>
+            </div>
+          )}
+          {list.nextCursor !== null && !moreFailed && (
             <div className={styles.more}>
               <button type="button" className={ui.secondary} onClick={loadMore} disabled={loadingMore}>
                 {loadingMore ? '読み込み中…' : 'もっと見る'}

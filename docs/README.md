@@ -27,6 +27,8 @@ docs/
 │   ├── screen-design.md               … 画面設計書
 │   ├── data-design.md                 … データ設計書（ER 図）
 │   └── infra-design.md                … インフラ設計書（AWS の構成図）
+├── api/
+│   └── openapi.yaml                   … API の仕様書（コードから自動で作る。手で直さない）
 ├── tech-stack.md                      … 技術スタック定義書
 └── development-plan.md                … 開発計画書（作る順番と進み具合）
 ```
@@ -38,10 +40,11 @@ docs/
 | [データ要件定義書](requirements/data-requirements.md) | BL-REQ-DATA | 扱うデータの項目、上限、保存する個人情報 | 〃 |
 | [機能定義書](functions/function-definition.md) | BL-FD | 機能ごとの文書の章立て、画面と API の共通の決まり、メッセージ一覧 | 機能定義書の本体で、機能ごとの文書とまとめて行う |
 | [FN-01〜FN-11 の機能定義書](functions/function-definition.md#12-機能定義書の構成) | BL-FD-01〜11 | 機能ごとの機能要件、処理の流れ、入力の確認、業務ルール、API（案）、使うデータ、権限、エラー、テストの観点 | 〃 |
-| [基本設計書](design/basic-design.md) | BL-BD | 設計全体の概要、表記のルール、これから行う設計 | 基本設計書の本体で、詳細文書とまとめて行う |
+| [基本設計書](design/basic-design.md) | BL-BD | 設計全体の概要、表記のルール、開発・運用の設計 | 基本設計書の本体で、詳細文書とまとめて行う |
 | [画面設計書](design/screen-design.md) | BL-BD-SCR | 共通仕様（色・文字・ボタン・メッセージ・共通の部品）、画面ごとのレイアウト・表示項目・操作 | 〃 |
 | [データ設計書](design/data-design.md) | BL-BD-DATA | ER 図、テーブル定義、データのルール、CRUD 表 | 〃 |
 | [インフラ設計書](design/infra-design.md) | BL-BD-INFRA | AWS の構成図、ネットワーク、外への通信、費用の目安 | 〃 |
+| [API の仕様書](api/openapi.yaml) | — | API の入力・出力の項目の一覧（OpenAPI）。基本設計書 2.1 のとおりコードから自動で作る | 要らない（コードと同じ） |
 | [技術スタック定義書](tech-stack.md) | BL-TECH | 使う言語・フレームワーク・サービス・開発ツールと選んだ理由 | 本書で行う |
 | [開発計画書](development-plan.md) | BL-PLAN | 作る順番（段階と Pull Request の単位）、段階ごとの完了条件、どこまでできたか | 本書で行う |
 

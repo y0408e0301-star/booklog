@@ -106,6 +106,12 @@ class BookControllerTests {
 		assertError(this.mvc.get().uri("/api/books/999").with(loggedIn(1)).exchange(), ErrorCode.BOOK_NOT_FOUND);
 	}
 
+	// 画面は数でない ID では API を呼ばずに M-15 を出す（FN-10 4 章）
+	@Test
+	void 本のIDが数でなければBAD_REQUEST() {
+		assertError(this.mvc.get().uri("/api/books/abc").with(loggedIn(1)).exchange(), ErrorCode.BAD_REQUEST);
+	}
+
 	@Test
 	void ログインしていなければ使えない() {
 		assertThat(this.mvc.get().uri("/api/books/search?q=a")).hasStatus(HttpStatus.UNAUTHORIZED);

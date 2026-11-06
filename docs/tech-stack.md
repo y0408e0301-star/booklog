@@ -3,9 +3,9 @@
 | 項目 | 内容 |
 | --- | --- |
 | 文書番号 | BL-TECH |
-| 版数 | 0.2 |
+| 版数 | 0.3 |
 | 作成日 | 2026-11-01 |
-| 最終更新日 | 2026-11-02 |
+| 最終更新日 | 2026-11-07 |
 | 作成者 | （氏名） |
 | 元にした文書 | [要件定義書](requirements/requirements.md) 版数 0.3、[機能定義書](functions/function-definition.md) 版数 0.1 |
 | 状態 | 承認待ち |
@@ -16,6 +16,7 @@
 | --- | --- | --- | --- |
 | 0.1 | 2026-11-01 | 初版。Raise timeline と同じ技術・同じバージョンを基本にし、Google Books API を使うためのもの（RestClient・jsoup・テストでの偽物）を足した | （氏名） |
 | 0.2 | 2026-11-02 | インフラ設計書 0.1 で、公開先から Google Books API へは NAT ゲートウェイを置かずにパブリックサブネットのタスクから出ると決めたので、3.5・4 章を直した。1 章と 5.3 にインフラ設計書・データ設計書へのリンクを足した | （氏名） |
+| 0.3 | 2026-11-07 | 文書と実装の突き合わせ（開発計画書 2-5）で、使っていないもの（Spring Boot Starter Validation。pom.xml からも外した。Redocly CLI）を消し、6 章に料金を記録した | （氏名） |
 
 ## 承認
 
@@ -79,7 +80,6 @@
 | フレームワーク | Spring Boot | 4.1.1 | ○ | spring-boot-starter-parent で指定 |
 | Web | Spring Boot Starter Web MVC | Spring Boot 4.1.1 に合わせる | ○ | API |
 | データベースの読み書き | Spring Boot Starter Data JPA（Hibernate） | 同上 | ○ | 一覧の件数をまとめて取る SQL は @Query で書く。jOOQ は使わない |
-| 入力の確認 | Spring Boot Starter Validation | 同上 | ○ | 文字数などの確認 |
 | 表の作成・変更 | Flyway（spring-boot-starter-flyway・flyway-database-postgresql） | 同上 | ○ | 表の変更の履歴をリポジトリに残す |
 | データベースの接続 | PostgreSQL JDBC Driver | 同上 | ○ | |
 | ログイン・権限 | Spring Boot Starter Security | 同上 | ○ | BCrypt・CSRF 対策・権限の確認（条件 2）。セッションは使わない（STATELESS） |
@@ -93,6 +93,8 @@
 | ビルド | Maven | 3.9.16（Maven Wrapper 3.3.4） | ○ | mvnw をリポジトリに入れる |
 
 「同上」は、バージョンを自分で書かず、Spring Boot 4.1.1 が決めるバージョンを使うという意味である。
+
+入力の確認は Service で行い、Bean Validation（Spring Boot Starter Validation）は使わない。項目ごとに機能定義書のエラーの code とメッセージを返すためである。
 
 ### 3.2 画面（フロントエンド）
 
@@ -166,7 +168,6 @@ API キーは、開発中は環境変数で、公開先は Parameter Store で�
 | Java の静的解析 | SpotBugs（spotbugs-maven-plugin） | 4.10.4.1 | ○ | |
 | TypeScript の lint | oxlint | ^1.81.0 | ○ | |
 | API の型の生成 | openapi-typescript | 7.13.0 | ○ | API の仕様書から画面の型を作る |
-| API の仕様書の HTML | Redocly CLI（@redocly/cli） | 2.62.1 | ○ | npx で使い、package.json には入れない |
 | エディタ | Visual Studio Code | | ○ | |
 
 ---
@@ -228,8 +229,14 @@ Raise timeline と同じものを使うことを前提にしたため、比較�
 
 ## 6. 費用
 
-AWS の月額の概算はインフラ設計書に書く。Google Books API は無料で使える（1 日の上限の中）。構築の前に AWS Pricing Calculator で確かめ、ここに記録する。
+AWS の月額の概算はインフラ設計書 7 章に書く。Google Books API は無料で使える（1 日の上限の中）。東京リージョンの料金を、AWS の料金 API（`aws pricing get-products`）で確かめた結果を記録する。
 
 | サービス | 項目 | 金額 | 確認日 | 確認した URL |
 | --- | --- | --- | --- | --- |
-| （構築前に記入） | | | | |
+| RDS | db.t4g.micro（Single-AZ、PostgreSQL） | 0.025 ドル／時 | 2026-11-07 | 料金 API（AmazonRDS） |
+| RDS | gp3 のストレージ | 0.138 ドル／GB・月 | 2026-11-07 | 料金 API（AmazonRDS） |
+| ALB | 時間あたり | 0.0243 ドル／時 | 2026-11-07 | 料金 API（AWSELB） |
+| ALB | LCU | 0.008 ドル／LCU・時 | 2026-11-07 | 料金 API（AWSELB） |
+| Fargate | ARM の vCPU | 0.04045 ドル／vCPU・時 | 2026-11-07 | 料金 API（AmazonECS） |
+| Fargate | ARM のメモリ | 0.00442 ドル／GB・時 | 2026-11-07 | 料金 API（AmazonECS） |
+| パブリック IPv4 | 1 つ | 0.005 ドル／時 | 2026-11-07 | 料金 API（AmazonVPC） |
