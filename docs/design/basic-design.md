@@ -3,9 +3,9 @@
 | 項目 | 内容 |
 | --- | --- |
 | 文書番号 | BL-BD |
-| 版数 | 0.3 |
+| 版数 | 0.4 |
 | 作成日 | 2026-11-01 |
-| 最終更新日 | 2026-11-05 |
+| 最終更新日 | 2026-11-06 |
 | 作成者 | （氏名） |
 | 元にした文書 | [要件定義書](../requirements/requirements.md)（BL-REQ）版数 0.4、[機能定義書](../functions/function-definition.md)（BL-FD）版数 0.1、[技術スタック定義書](../tech-stack.md)（BL-TECH）版数 0.1 |
 | 状態 | 承認待ち |
@@ -17,6 +17,7 @@
 | 0.1 | 2026-11-01 | 初版。構成は Raise timeline の基本設計書と同じにした。画面設計書 0.1 を作成。データ設計書・インフラ設計書は次の版で足す | （氏名） |
 | 0.2 | 2026-11-02 | データ設計書 0.1・インフラ設計書 0.1 を作成し、1.2 にリンクを足した | （氏名） |
 | 0.3 | 2026-11-05 | 画面設計書を 0.2 にした（G-8 の本棚に著者を足した） | （氏名） |
+| 0.4 | 2026-11-06 | 2.2.1 に公開環境の手順（初めて作るとき、API キーの置き方、deploy.sh・start.sh・stop.sh、すべて消すとき、反映のきまり、困ったとき、費用の確認）を書いた。インフラ設計書を 0.2 にした | （氏名） |
 
 ## 承認
 
@@ -78,14 +79,82 @@ API の一覧（URL・メソッド・入力・出力・主なエラー）、エ�
 | --- | --- |
 | 環境の作り方 | 開発環境（Docker Compose）と AWS の構築手順。AWS は Terraform で作る |
 | 表の変更の管理 | Flyway のマイグレーションの書き方と履歴の残し方 |
-| 公開の手順 | API のイメージ（ECR）と画面（S3）の反映、止め方・起動し直し方、検収の後の消し方（要件定義書 P-6）。Raise timeline の deploy.sh・start.sh・stop.sh と同じ形にする |
+| 公開の手順 | API のイメージ（ECR）と画面（S3）の反映、止め方・起動し直し方、検収の後の消し方（要件定義書 P-6）。2.2.1 に書いた |
 | データベースのバックアップと復旧 | RDS の自動バックアップからの戻し方（N-9） |
 | 不適切なレビュー・写真の削除 | データベースと S3 から消す手順（R-2） |
 | JWT の秘密の値の変え方 | 漏れた・漏れた疑いがあるときに、Parameter Store の値を変え、リフレッシュトークンを全部無効にして全員をログアウトさせる手順 |
-| Google Books API の API キー | キーの作り方と、Books API だけに使える制限のかけ方。漏れたときの作り直し方（R-8）。公開の前に、実際の 1 日の上限を Google Cloud のコンソールで確かめる手順（U-2） |
+| Google Books API の API キー | キーの作り方と、Books API だけに使える制限のかけ方。漏れたときの作り直し方（R-8）。公開の前に、実際の 1 日の上限を Google Cloud のコンソールで確かめる手順（U-2）。2.2.1 に書いた |
 | 定期の処理 | 期限切れのリフレッシュトークンの削除、S3 から消せなかった写真の削除、24 時間を過ぎた検索の結果の削除を 1 日 1 回動かす方法 |
 | 費用の確認 | 月 1 回の確認手順と AWS Budgets の設定（R-1） |
 | 障害時の対応 | 障害に気づく方法（CloudWatch）、Google Books API が止まったとき・上限に達したときの確かめ方（N-8） |
+
+#### 2.2.1 公開環境の手順
+
+構成は[インフラ設計書](infra-design.md)のとおり。スクリプトはリポジトリのフォルダで Git Bash から実行する。どれも先に terraform plan を出し、「この内容で反映しますか？」に y と答えたときだけ反映する（`-y` を付けると確かめずに反映する）。
+
+| スクリプト | すること | かかる時間 |
+| --- | --- | --- |
+| `bash deploy/deploy.sh` | 今のコミットを反映する。jar を作り、API のイメージ（arm64）をコミット ID のタグで ECR に push し、`terraform apply -var running=true` で新しいタスクに入れ替える。画面をビルドして S3 に置き（assets/ は 1 年、ほかは no-cache）、CloudFront のキャッシュを消して、公開 URL の /actuator/health が UP になるのを待つ。コミットしていない変更があるとき、Parameter Store に API キーがないときは止まる | 10〜15 分 |
+| `bash deploy/start.sh` | RDS を起動して待ち、`running=true` で ECS のサービスと ALB を作り直す。イメージと画面は前に反映したものを使う | 10〜20 分 |
+| `bash deploy/stop.sh` | `running=false` で CloudFront を止めている間のページにし、ECS のサービスと ALB を消して、RDS を止める。データと URL はそのまま | 5〜10 分 |
+
+**初めて作るとき**
+
+1. 手元に AWS CLI（~/.aws の鍵）・Terraform・Docker Desktop を用意する（技術スタック定義書 3.4）
+2. 下の「Google Books API の API キー」のとおり、公開用のキーを作って Parameter Store に置く
+3. deploy/terraform/terraform.tfvars に `alert_email = "通知を受け取るメールアドレス"` を書く（リポジトリには入れない）
+4. deploy/terraform で `terraform init` → `terraform plan` で中身を確かめ → `terraform apply`（running は既定の false。CloudFront・RDS などを作る。15〜20 分）
+5. 届いたメール（AWS Notification）の「Confirm subscription」を押す
+6. `bash deploy/deploy.sh` で最初のイメージと画面を反映する（ECR にイメージがないうちは running=true にできないため、start.sh ではなく deploy.sh を使う）
+
+**Google Books API の API キー**
+
+開発用とは別のキーを使う（インフラ設計書 6 章）。作り方は [README](../../README.md#google-books-api-の-api-キー) の 1〜3 と同じで、Books API だけに使える制限をかける（R-8）。
+
+1. Git Bash で次を実行し、キーを貼り付けて Enter を押す。キーは画面にも履歴にも残らない。`MSYS_NO_PATHCONV=1` は、Git Bash が /bl/... を Windows のパスに書き換えないために付ける
+
+   ```
+   read -rs key
+   MSYS_NO_PATHCONV=1 aws ssm put-parameter --name /bl/google-books/api-key --type SecureString --value "$key"
+   unset key
+   ```
+
+2. 実際の 1 日の上限を確かめる（U-2）。Google Cloud のコンソールで、キーのプロジェクトを選び、「API とサービス」→「有効な API とサービス」→「Books API」→「割り当てとシステム制限」の「Queries per day」を見る
+3. キーを変えたとき（漏れたときを含む。R-8）は、Google Cloud で新しいキーを作り、上の 1 に `--overwrite` を付けて置き直し、`aws ecs update-service --cluster bl-cluster --service bl-app --force-new-deployment` でタスクを入れ替えてから、古いキーを消す。タスクは起動するときにしか値を読まない
+
+**すべて消すとき**
+
+元に戻せない。公開の URL も変わる（作り直すと別の URL になる）。
+
+1. deploy/terraform で `terraform apply -var rds_deletion_protection=false` で RDS の削除保護を外す（RDS が止まっていると、変更の後の待ち合わせで失敗と出るが、削除保護は外れる。`aws rds describe-db-instances` の DeletionProtection で確かめる）
+2. S3 の画面と写真のバケット（`aws s3 rm s3://<バケット> --recursive`）と ECR（`aws ecr batch-delete-image`）を空にする。中身があると Terraform は消せない
+3. `terraform plan -destroy -var rds_deletion_protection=false` で中身を確かめてから、`terraform destroy -var rds_deletion_protection=false`（CloudFront の削除に 20 分ほどかかる）
+4. 消す前に取った最後のスナップショット（bl-db-final）が要らなければ、`aws rds delete-db-snapshot --db-snapshot-identifier bl-db-final` で消す
+5. Parameter Store の /bl/google-books/api-key は Terraform で作っていないので残る。`MSYS_NO_PATHCONV=1 aws ssm delete-parameter --name /bl/google-books/api-key` で消し、Google Cloud でキーも消す
+
+**反映のきまり**
+
+- イメージのタグは上書きできず、Terraform は ECR に最後に push したイメージを使う。前のコミットに戻すときは、`git revert` で新しいコミットを作ってから反映する
+- 新しいタスクが起動しなければ、ECS が前のタスク定義に戻す（デプロイのサーキットブレーカー）。このとき terraform apply は失敗で終わる
+- 画面の古い assets/ は消さない（反映の前から開いている人が、古い画面のファイルを読めるように）
+
+**困ったとき**
+
+| 症状 | 調べるところ・対処 |
+| --- | --- |
+| deploy.sh・start.sh の apply がタスクの起動で止まる・失敗する | CloudWatch Logs の /bl/app で API のログを見る（起動の失敗・DB に接続できないなど）。ECS のコンソールのサービスの「イベント」で、イメージが取れない・ヘルスチェックに通らない・Parameter Store の値を読めないなどを見る |
+| start.sh の plan が ECR のイメージを読めずに失敗する | ECR にイメージがない（初めてのとき）。deploy.sh で反映する |
+| 公開 URL が「止めています」のページのまま | CloudFront の反映（5〜10 分）を待つ。続くなら `terraform output` と CloudFront のコンソールで、/api/* のビヘイビアがあるかを見る |
+| 書籍検索が M-14 になる | CloudWatch Logs の /bl/app で Google Books API の応答を見る。403 ならキーの制限か Parameter Store の値が違う。429 なら上限に達した |
+| Git Bash で `aws logs tail /bl/app` などが何も出さない・名前が違うと言われる | Git Bash が /bl/... を Windows のパスに書き換えている。`MSYS_NO_PATHCONV=1` を前に付ける |
+| RDS が勝手に起動している | 止めてから 7 日たつと AWS が起動する。もう一度 stop.sh を実行する |
+| deploy.sh の `npm ci` が EPERM（operation not permitted）で止まる | 開発用の Vite（5173）などが frontend/node_modules のファイルを使っている。止めてから deploy.sh をもう一度実行する（イメージの push と apply は済んでいれば飛ばされる） |
+| 反映の直後に /api/* が 502 になる | CloudFront の設定の反映中。数分待つ |
+| apply が `Unrecognized remote plugin message` で途中で止まる | Windows で、.terraform の中の random プロバイダーの exe が消えていることがある（Raise timeline で起きた。原因は確かめていない）。deploy/terraform で `terraform init` をして入れ直し、同じスクリプトをもう一度実行する（途中まで済んだ分は state に残っている） |
+
+**費用の確認**
+
+月 1 回、請求のコンソールで費用とクレジットの残りを確かめる。AWS Budgets（bl-budget）は、実際の費用が予算の 80% を超えたときと、月末の予測が予算を超えそうなときにメールを送る（R-1）。無料プランの間は、クレジットの残りと期限にも気を付ける（インフラ設計書 7 章）。
 
 ### 2.3 ログ
 
