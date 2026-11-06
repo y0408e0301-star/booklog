@@ -146,6 +146,7 @@ API の一覧（URL・メソッド・入力・出力・主なエラー）、エ�
 | start.sh の plan が ECR のイメージを読めずに失敗する | ECR にイメージがない（初めてのとき）。deploy.sh で反映する |
 | 公開 URL が「止めています」のページのまま | CloudFront の反映（5〜10 分）を待つ。続くなら `terraform output` と CloudFront のコンソールで、/api/* のビヘイビアがあるかを見る |
 | 書籍検索が M-14 になる | CloudWatch Logs の /bl/app で Google Books API の応答を見る。403 ならキーの制限か Parameter Store の値が違う。429 なら上限に達した |
+| Git Bash で `aws logs tail /bl/app` などが何も出さない・名前が違うと言われる | Git Bash が /bl/... を Windows のパスに書き換えている。`MSYS_NO_PATHCONV=1` を前に付ける |
 | RDS が勝手に起動している | 止めてから 7 日たつと AWS が起動する。もう一度 stop.sh を実行する |
 | deploy.sh の `npm ci` が EPERM（operation not permitted）で止まる | 開発用の Vite（5173）などが frontend/node_modules のファイルを使っている。止めてから deploy.sh をもう一度実行する（イメージの push と apply は済んでいれば飛ばされる） |
 | 反映の直後に /api/* が 502 になる | CloudFront の設定の反映中。数分待つ |
