@@ -157,6 +157,23 @@ describe('コメント（G-7）', () => {
     expect(await screen.findByText('コメント 1')).toBeInTheDocument()
   })
 
+  it('「もっと見る」に失敗したら、出したコメントは残して M-29 と「再読み込み」を出す', async () => {
+    const first = Array.from({ length: 50 }, (_, i) => comment(i + 1))
+    mockFetch({
+      'GET /api/reviews/1234': () => json(200, review({ commentCount: 51 })),
+      'GET /api/reviews/1234/comments': page(first, '50'),
+      'GET /api/reviews/1234/comments?cursor=50': [() => json(500, {}), page([comment(51)])],
+    })
+    renderDetail()
+    await screen.findByText('コメント 50')
+    await userEvent.click(screen.getByRole('button', { name: 'もっと見る' }))
+    expect(await screen.findByText(M[29])).toBeInTheDocument()
+    expect(shown()).toHaveLength(50)
+    await userEvent.click(screen.getByRole('button', { name: '再読み込み' }))
+    expect(await screen.findByText('コメント 51')).toBeInTheDocument()
+    expect(screen.queryByText(M[29])).not.toBeInTheDocument()
+  })
+
   // C-5・TC-06-4
   it('自分のコメントにだけ「削除」を出し、M-24 で確かめてから消してコメント数を 1 減らす', async () => {
     mockFetch({

@@ -52,7 +52,7 @@ class TokenService {
 		return new IssuedTokens(accessToken(user, now), refreshToken);
 	}
 
-	// JWT の中身は誰でも読めるため、ユーザーの ID とユーザー ID だけを入れる（FN-01 5 章 No.5）
+	// JWT の中身は誰でも読めるため、ユーザーの ID とユーザー ID だけを入れる（FN-01 5 章の 4）
 	private String accessToken(User user, Instant now) {
 		JwtClaimsSet claims = JwtClaimsSet.builder()
 			.subject(String.valueOf(user.getId()))

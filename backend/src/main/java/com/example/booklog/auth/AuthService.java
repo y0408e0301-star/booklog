@@ -152,7 +152,7 @@ class AuthService {
 		return new LoginResult(Me.of(user), this.tokens.issue(user));
 	}
 
-	// ログアウトしたブラウザのリフレッシュトークンだけを無効にする（ほかのブラウザのログインは続く。FN-01 5 章 No.7）
+	// ログアウトしたブラウザのリフレッシュトークンだけを無効にする（ほかのブラウザのログインは続く。FN-01 5 章の 10）
 	@Transactional
 	void logout(long userId, @Nullable String refreshToken) {
 		if (refreshToken == null || refreshToken.isEmpty()) {

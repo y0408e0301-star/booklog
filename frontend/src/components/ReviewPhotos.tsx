@@ -3,10 +3,10 @@ import { refreshPhotoUrls, type ReviewPhoto } from '../api'
 import PhotoDialog from './PhotoDialog'
 import styles from './ReviewPhotos.module.css'
 
-// 投稿カードの写真（画面設計書 2.7、FN-04 PH-6〜PH-8）。
+// レビューのカードの写真（画面設計書 2.7、FN-04 PH-6〜PH-8）。
 // 1 枚：横幅いっぱい、2 枚：横に 2 つ、3 枚：左に 1 つ・右に 2 つ、4 枚：2 行 2 列。押すと G-11
 export default function ReviewPhotos({ photos: initial }: { photos: ReviewPhoto[] }) {
-  // 取り直した URL（refreshed は取り直し済みか）。投稿が変わったら（タイムラインの読み直しなど）初めの URL に戻す
+  // 取り直した URL（refreshed は取り直し済みか）。レビューが変わったら（タイムラインの読み直しなど）初めの URL に戻す
   const [state, setState] = useState({ initial, photos: initial, refreshed: false, failed: false })
   const [open, setOpen] = useState<number | null>(null)
   const current = state.initial === initial ? state : { initial, photos: initial, refreshed: false, failed: false }
