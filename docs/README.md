@@ -29,6 +29,9 @@ docs/
 │   └── infra-design.md                … インフラ設計書（AWS の構成図）
 ├── api/
 │   └── openapi.yaml                   … API の仕様書（コードから自動で作る。手で直さない）
+├── test/
+│   ├── test-specification.md          … テスト仕様書（方針・環境ごとの結果・手動の項目）
+│   └── requirement-coverage.md        … 要件 ID とテストの対応表（スクリプトで作る。手で直さない）
 ├── tech-stack.md                      … 技術スタック定義書
 └── development-plan.md                … 開発計画書（作る順番と進み具合）
 ```
@@ -46,6 +49,8 @@ docs/
 | [インフラ設計書](design/infra-design.md) | BL-BD-INFRA | AWS の構成図、ネットワーク、外への通信、費用の目安 | 〃 |
 | [API の仕様書](api/openapi.yaml) | — | API の入力・出力の項目の一覧（OpenAPI）。基本設計書 2.1 のとおりコードから自動で作る | 要らない（コードと同じ） |
 | [技術スタック定義書](tech-stack.md) | BL-TECH | 使う言語・フレームワーク・サービス・開発ツールと選んだ理由 | 本書で行う |
+| [テスト仕様書](test/test-specification.md) | BL-TEST | テストの方針、要件 ID・テストの観点とテストの対応、環境ごとの結果、手動で確かめる項目 | 本書で行う |
+| [要件 ID とテストの対応表](test/requirement-coverage.md) | — | 要件 ID・テストの観点ごとに、確かめるテストの一覧。テスト仕様書 2 章のとおりスクリプトで作る | 要らない（コードと同じ） |
 | [開発計画書](development-plan.md) | BL-PLAN | 作る順番（段階と Pull Request の単位）、段階ごとの完了条件、どこまでできたか | 本書で行う |
 
 文書は Raise timeline（タイムライン型 SNS）と同じ構成で作る。

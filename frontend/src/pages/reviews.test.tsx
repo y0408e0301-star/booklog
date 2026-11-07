@@ -24,6 +24,7 @@ const location = () => screen.getByRole('status', { name: '今の URL' })
 
 describe('本のページの平均評価とレビューの一覧（G-5）', () => {
   // TC-10-1・BK-3
+  // BK-6
   it('平均評価と件数を出し、0 件なら「—」と M-26', async () => {
     mockFetch({ 'GET /api/books/56': () => json(200, book()), 'GET /api/books/56/reviews': page([]) })
     renderComponent(<BookPage />, { path: '/books/56', route: '/books/:id' })
@@ -126,6 +127,7 @@ describe('レビューの投稿（G-6）', () => {
   })
 
   // TC-03-1・TC-03-2（M-16・M-17）
+  // RV-3
   it('星を選ばず感想が空なら M-16 と M-17 を出し、送らない', async () => {
     const fetch = mockFetch({ 'GET /api/books/56': () => json(200, book()) })
     renderForm()

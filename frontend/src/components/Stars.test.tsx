@@ -7,6 +7,7 @@ import Stars from './Stars'
 
 // 星（画面設計書 2.8）
 describe('Stars', () => {
+  // N-24
   it('星 5 つと数字を並べ、読み上げは「星 4（5 段階中）」にする', () => {
     const { container } = render(<Stars value={4} size={16} />)
     expect(container).toHaveTextContent('星 4（5 段階中）★★★★☆4')

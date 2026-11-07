@@ -9,6 +9,7 @@ test.afterEach(closeContexts)
 // 権限と安全（要件定義書のセキュリティの要件）のうち、画面を通して確かめられるもの。
 // API の層ごとの細かい確認は、API のテスト（*ApiTests）で行っている
 
+// N-12
 test('ログインしていないと、どの画面も G-1 に移り、API も 401 を返す', async ({ browser }) => {
   const context = await newContext(browser)
   const page = await context.newPage()
@@ -24,6 +25,7 @@ test('ログインしていないと、どの画面も G-1 に移り、API も 4
 })
 
 // TC-03-6・N-13
+// BR-7
 test('他人のレビュー・コメントは、画面に操作が出ず、API を直接呼んでも変えられない', async ({ browser }) => {
   const taro = user('st', 'たろう')
   const hana = user('sh', 'はなこ')
@@ -88,6 +90,7 @@ test('感想・コメントの HTML は文字のまま出て、スクリプト�
 })
 
 // BR-8
+// N-15
 test('5 回続けてパスワードを間違えると、正しいパスワードでもログインできない', async ({ browser }) => {
   const saburo = user('sl', 'さぶろう')
   const page = await signup(browser, saburo)

@@ -26,6 +26,7 @@ function renderDialog(routes: Parameters<typeof mockFetch>[0] = {}) {
 }
 
 describe('退会の確認ダイアログ（G-13）', () => {
+  // N-22
   it('M-9 を出し、「キャンセル」にカーソルを置く。パスワードが空なら「退会する」を押せない', async () => {
     const { dialog, password, cancel, submit } = renderDialog()
     expect(dialog).toHaveAccessibleDescription(M[9])
@@ -36,6 +37,7 @@ describe('退会の確認ダイアログ（G-13）', () => {
     expect(password).toHaveAttribute('type', 'password')
   })
 
+  // A-11
   it('パスワードを入れて「退会する」を押すと API に送り、M-11 を出して G-1 に移す', async () => {
     const { fetch, signedOut, password, submit } = renderDialog({
       'DELETE /api/me': () => new Response(null, { status: 204 }),

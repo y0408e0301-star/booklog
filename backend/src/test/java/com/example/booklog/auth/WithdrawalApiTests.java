@@ -99,6 +99,7 @@ class WithdrawalApiTests {
 	}
 
 	// TC-01-13・TC-01-14：その人のものはすべて消え、本とほかの人のものは残る
+	// A-12・BR-14・N-10
 	@Test
 	void 退会するとその人のデータと写真が消え本は残る() {
 		long mine = postReview(this.taro);

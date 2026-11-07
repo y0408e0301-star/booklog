@@ -32,6 +32,7 @@ function renderLayout(path: string, signOut = vi.fn(async () => {})) {
 const searchInput = () => screen.getByRole('searchbox', { name: '本を探す文字' })
 
 describe('Layout', () => {
+  // PF-1
   it('アプリ名は G-3、自分の頭文字の丸は自分の G-8 へのリンク', () => {
     renderLayout('/books/1')
     expect(screen.getByRole('link', { name: 'BookLog' })).toHaveAttribute('href', '/')

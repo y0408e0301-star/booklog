@@ -17,6 +17,7 @@ describe('BookCover', () => {
   })
 
   // TC-10-3
+  // B-7
   it('URL がなければ「表紙なし」の枠を出す', () => {
     render(<BookCover title="こころ" thumbnailUrl={null} width={128} />)
     expect(screen.queryByRole('img')).not.toBeInTheDocument()

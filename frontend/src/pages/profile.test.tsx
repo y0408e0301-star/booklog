@@ -59,6 +59,7 @@ describe('プロフィール画面（G-8）', () => {
   })
 
   // TC-11-2
+  // PF-3
   it('ほかの人にはフォローボタン、自分には「プロフィールを編集」', async () => {
     mockFetch({ 'GET /api/users/hanako': () => json(200, profile({ followedByMe: true })), ...noReviews })
     const { unmount } = renderProfile()
@@ -152,6 +153,7 @@ describe('プロフィール画面（G-8）', () => {
   })
 
   // ST-4・ST-6
+  // TC-08-8
   it('小さなタブを押すとその分類を読む。0 冊なら M-27。URL を開いても同じ分類', async () => {
     mockFetch({
       'GET /api/users/hanako': () => json(200, profile()),

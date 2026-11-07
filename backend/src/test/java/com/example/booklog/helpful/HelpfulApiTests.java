@@ -73,6 +73,7 @@ class HelpfulApiTests {
 	}
 
 	// TC-05-1・5 章の 2：何回送っても同じ結果
+	// BR-6
 	@Test
 	void 何回送っても行は0か1() {
 		for (int i = 0; i < 5; i++) {
@@ -102,6 +103,7 @@ class HelpfulApiTests {
 	}
 
 	// TC-05-3（H-4）
+	// BR-15
 	@Test
 	void 自分のレビューには付けられない() {
 		assertError(mark(this.taro), ErrorCode.CANNOT_MARK_OWN_REVIEW);

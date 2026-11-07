@@ -50,6 +50,7 @@ class ReadingStatusesRepositoryTests {
 	}
 
 	// ST-2・5 章の 1：本棚の行は 1 冊に 1 つのまま、ステータスが変わる
+	// BR-6
 	@Test
 	void 付けて変えても行は一つ() {
 		this.statuses.set(this.taro.getId(), this.neko.getId(), ReadingStatus.WANT);
@@ -75,6 +76,7 @@ class ReadingStatusesRepositoryTests {
 	}
 
 	// ST-3：外す。なくても何もしない。ほかの人の本棚は変えない
+	// BR-6
 	@Test
 	void 外すとその人の行だけがなくなる() {
 		this.statuses.set(this.taro.getId(), this.neko.getId(), ReadingStatus.READ);

@@ -29,6 +29,7 @@ describe('PhotoDialog', () => {
     expect(screen.getByText('2 / 3')).toBeInTheDocument()
   })
 
+  // PH-7
   it('「‹」「›」と左右の矢印キーで切り替え、端まで行ったら反対の端に戻る', async () => {
     render(<Dialog />)
     await userEvent.click(screen.getByRole('button', { name: '前の写真' }))
@@ -51,6 +52,7 @@ describe('PhotoDialog', () => {
     expect(shown()).toHaveAttribute('src', 'https://s3/posts/1.png')
   })
 
+  // PH-7
   it('Esc キー・「×」・写真の外側のクリックで閉じる', async () => {
     const onClose = vi.fn()
     render(<Dialog onClose={onClose} />)
