@@ -6,6 +6,7 @@ test.afterEach(closeContexts)
 
 // 書籍検索（FN-02）・本のページ（FN-10）・読書ステータス（FN-08）
 
+// B-10
 test('ISBN・「もっと見る」・0 件・直接開いた URL', async ({ browser }) => {
   const page = await signup(browser, user('bs', 'たろう'))
 
@@ -17,8 +18,9 @@ test('ISBN・「もっと見る」・0 件・直接開いた URL', async ({ brow
     await expect(page.getByText('ISBN 9784101010014')).toBeVisible()
   })
 
+  const many = bookQuery('多数')
   await test.step('20 件ずつ「もっと見る」で足す（TC-02-3）', async () => {
-    const q = bookQuery('多数')
+    const q = many
     await page.goto(`/books/search?${new URLSearchParams({ q })}`)
     // 直接開くと検索欄に文字が入り、結果が出る（TC-02-11）
     await expect(page.getByRole('searchbox', { name: '本を探す文字' })).toHaveValue(q)
@@ -34,6 +36,12 @@ test('ISBN・「もっと見る」・0 件・直接開いた URL', async ({ brow
     await expect(page.getByText(`「${q}」に一致する本は見つかりませんでした。`)).toBeVisible()
   })
 
+  await test.step('ブラウザの「戻る」で、前の文字の結果に戻る（TC-02-11）', async () => {
+    await page.goBack()
+    await expect(page.getByRole('searchbox', { name: '本を探す文字' })).toHaveValue(many)
+    await expect(page.getByRole('list', { name: '検索結果' }).getByRole('listitem')).toHaveCount(20)
+  })
+
   await test.step('空白だけなら M-12 を出し、探さない（TC-02-2）', async () => {
     await searchBooks(page, '   ')
     await expect(page.getByText('ISBN か書名を入力してください。')).toBeVisible()
@@ -41,6 +49,7 @@ test('ISBN・「もっと見る」・0 件・直接開いた URL', async ({ brow
 })
 
 // TC-02-6・TC-10-5
+// B-8・N-8
 test('Google Books API が使えないときは M-14 を出し、取り込んだ本のページは開ける', async ({ browser }) => {
   const page = await signup(browser, user('bd', 'たろう'))
   const id = await importBook(page, '使える本')

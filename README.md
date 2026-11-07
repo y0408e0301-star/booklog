@@ -130,7 +130,7 @@ Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml]
 | `social.spec.ts` | 参考になった、コメント、フォロー・解除と G-10、タイムラインのタブと続きの読み込み |
 | `profile.spec.ts` | プロフィール・本棚のタブ、G-9 の編集、M-28、退会 |
 | `security.spec.ts` | ログインしていないと使えない、他人のものを画面からも API からも変えられない、CSRF、HTML が文字のまま出る、5 回の失敗でロック |
-| `session.spec.ts` | JWT が切れてもリフレッシュトークンで使い続けられる、ログアウト後・使い回したリフレッシュトークンは使えない、通信切れのお知らせ |
+| `session.spec.ts` | ブラウザを開き直してもログインしたまま、JWT が切れてもリフレッシュトークンで使い続けられる、ログアウト後・使い回したリフレッシュトークンは使えない、通信切れのお知らせ |
 | `screens.spec.ts` | すべての画面（G-1〜G-13）に、アクセシビリティの違反（axe-core。WCAG 2.1 の A・AA）と横のスクロールがない |
 
 画面の幅は 2 通りで動かします（[playwright.config.ts](frontend/playwright.config.ts) の projects）。`pc`（1280px）ではすべてを、`mobile`（375px）では `main-flow.spec.ts` と `screens.spec.ts` を動かします。
@@ -148,6 +148,7 @@ Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml]
 
 3. `frontend` で `npm run test:e2e` を実行します（2 分ほど）。偽物（9100）は Playwright が起動します。1 つのファイルだけなら `npm run test:e2e -- reviews`、片方の幅だけなら `-- --project=pc`
 
+- 環境ごとの結果と、要件 ID とテストの対応は[テスト仕様書](docs/test/test-specification.md)に書きます。テストを足したら `node scripts/requirement-coverage.mjs` で対応表を作り直します
 - 行き先は既定で画面の Vite（5173）です。環境変数 `E2E_BASE_URL` で変えられます（CI は jar の 8080）
 - 環境変数 `E2E_BROWSERS=all` を付けると、Edge に加えて Chrome・Firefox・WebKit（Safari の代わり）・iPhone と Android のエミュレーションでも流します（Firefox と WebKit は先に `npx playwright install firefox webkit`）
 - テストは開発用の DB にユーザーと本を作ります。ユーザー ID は `e2e_`、本の ID は `e2e-` で始まり、テストを始める前と終わった後に `docker compose exec` で DB から消します

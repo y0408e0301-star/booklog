@@ -11,12 +11,14 @@ const input = () => screen.getByRole('searchbox', { name: '本を探す文字' }
 const location = () => screen.getByRole('status', { name: '今の URL' })
 
 describe('SearchBox', () => {
+  // B-1
   it('Enter キーで、トリムした文字の G-4 を開く', async () => {
     renderComponent(<SearchBox initialQuery="" autoFocus={false} className="" />)
     await userEvent.type(input(), '  夏目漱石 {Enter}')
     expect(location()).toHaveTextContent('/books/search?q=%E5%A4%8F%E7%9B%AE%E6%BC%B1%E7%9F%B3')
   })
 
+  // B-1
   it('虫めがねのボタンでも開く', async () => {
     renderComponent(<SearchBox initialQuery="" autoFocus={false} className="" />)
     await userEvent.type(input(), '978-4-10-101001-4')
@@ -25,6 +27,7 @@ describe('SearchBox', () => {
   })
 
   // TC-02-2
+  // B-1
   it('空白だけなら M-12 を出し、検索しない', async () => {
     renderComponent(<SearchBox initialQuery="" autoFocus={false} className="" />, { path: '/books/1' })
     await userEvent.type(input(), '　 {Enter}')

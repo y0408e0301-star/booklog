@@ -15,6 +15,7 @@ describe('ReviewCard', () => {
     vi.restoreAllMocks()
   })
 
+  // RV-8・PF-1
   it('書いた人・日時・本・星・感想・件数を出す（RV-6）', () => {
     renderComponent(<ReviewCard review={review({ commentCount: 3, helpfulCount: 12 })} showBook onDelete={vi.fn()} />)
     const card = screen.getByRole('article', { name: 'たろうのレビュー' })
@@ -109,6 +110,7 @@ describe('ReviewCard', () => {
     expect(location()).toHaveTextContent('/books/56/review')
   })
 
+  // N-22
   it('「削除」で G-12 に M-19 を出し、「削除」で消す。「キャンセル」では何もしない', async () => {
     const onDelete = vi.fn()
     const fetch = mockFetch({ 'DELETE /api/reviews/1234': () => json(204) })

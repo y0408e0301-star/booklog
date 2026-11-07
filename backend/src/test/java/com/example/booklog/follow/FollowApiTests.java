@@ -77,6 +77,7 @@ class FollowApiTests {
 	}
 
 	// TC-07-2・5 章の 2：何回送っても同じ結果。同時に送っても行は 1 つ
+	// BR-6
 	@Test
 	void 何回送っても同時に送っても行は0か1() throws Exception {
 		Callable<MvcTestResult> task = () -> follow(this.taro, "hanako");

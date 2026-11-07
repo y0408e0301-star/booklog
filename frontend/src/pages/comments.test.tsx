@@ -30,6 +30,7 @@ const cardCount = () => within(screen.getByRole('article')).getByLabelText(/^コ
 
 describe('コメント（G-7）', () => {
   // C-3・C-4・C-7
+  // PF-1
   it('古い順に、表示名・@ユーザー ID・本文を出す。名前を押すと G-8。HTML の記号と改行はそのまま（TC-06-6）', async () => {
     mockFetch({
       'GET /api/reviews/1234': () => json(200, review({ commentCount: 2 })),
@@ -175,6 +176,7 @@ describe('コメント（G-7）', () => {
   })
 
   // C-5・TC-06-4
+  // N-22
   it('自分のコメントにだけ「削除」を出し、M-24 で確かめてから消してコメント数を 1 減らす', async () => {
     mockFetch({
       'GET /api/reviews/1234': () => json(200, review({ commentCount: 2 })),

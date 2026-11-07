@@ -33,6 +33,34 @@ test('JWT が切れても、リフレッシュトークンで取り直して使�
   await expect(page).toHaveURL(/\/login$/)
 })
 
+// TC-01-5・A-8
+test('ブラウザを閉じて開き直してもログインしたままで、ログアウトすると G-1 になる', async ({ browser }) => {
+  const taro = user('ax', 'たろう')
+  const page = await signup(browser, taro)
+  // ブラウザを閉じると消える Cookie（expires が -1）ではない
+  const refresh = await cookie(page.context(), 'refresh_token')
+  expect(refresh!.expires).toBeGreaterThan(Date.now() / 1000)
+
+  const state = await page.context().storageState()
+  await page.context().close()
+  const { baseURL, viewport, locale, timezoneId, isMobile, hasTouch, userAgent, deviceScaleFactor } = test.info().project.use
+  const reopened = await browser.newContext({
+    baseURL, viewport, locale, timezoneId, isMobile, hasTouch, userAgent, deviceScaleFactor, storageState: state,
+  })
+  try {
+    const again = await reopened.newPage()
+    await again.goto('/')
+    await expect(again.getByRole('link', { name: '自分のプロフィール' })).toBeVisible()
+
+    await again.getByRole('button', { name: 'ログアウト' }).click()
+    await expect(again).toHaveURL(/\/login$/)
+    await again.goto('/')
+    await expect(again).toHaveURL(/\/login$/)
+  } finally {
+    await reopened.close()
+  }
+})
+
 test('ログアウトした後は、前のリフレッシュトークンを使えない', async ({ browser }) => {
   const page = await signup(browser, user('ao', 'はなこ'))
   const context = page.context()

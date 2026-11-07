@@ -100,6 +100,17 @@ jobs:
             api.log
           if-no-files-found: ignore
 
+  requirement-coverage:
+    name: 要件 ID とテストの対応（テスト仕様書）
+    runs-on: ubuntu-latest
+    # テストで確かめる要件 ID にテストがないか、docs/test/requirement-coverage.md を作り直していなければ失敗する
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - run: node scripts/requirement-coverage.mjs --check
+
   terraform:
     name: Terraform（書式・構文・lint）
     runs-on: ubuntu-latest

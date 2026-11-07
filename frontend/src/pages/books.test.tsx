@@ -57,6 +57,7 @@ describe('書籍検索の結果画面（G-4）', () => {
   })
 
   // TC-02-3
+  // B-3
   it('「もっと見る」で次の 20 件を足し、続きがなければ出さない', async () => {
     const fetch = mockFetch({
       [SEARCH]: () => json(200, { items: items(1, 20), hasNext: true }),
@@ -72,6 +73,7 @@ describe('書籍検索の結果画面（G-4）', () => {
   })
 
   // TC-02-4（画面）
+  // B-4
   it('0 件なら M-13', async () => {
     mockFetch({ [SEARCH]: () => json(200, { items: [], hasNext: false }) })
     renderComponent(<BookSearchPage />, { path: G4 })
@@ -79,6 +81,7 @@ describe('書籍検索の結果画面（G-4）', () => {
   })
 
   // TC-02-6
+  // B-8
   it('Google Books API が使えなければ M-14 を出し、「再読み込み」で探し直す', async () => {
     mockFetch({ [SEARCH]: [unavailable, () => json(200, { items: [item('a')], hasNext: false })] })
     renderComponent(<BookSearchPage />, { path: G4 })
@@ -239,6 +242,7 @@ describe('本のページ（G-5）', () => {
   })
 
   // TC-10-6
+  // BK-7
   it('存在しない本は M-15', async () => {
     mockFetch({ 'GET /api/books/999999': () => json(404, { code: 'BOOK_NOT_FOUND', message: M[15], field: null }) })
     renderBookPage('/books/999999')

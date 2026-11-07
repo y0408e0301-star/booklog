@@ -14,6 +14,7 @@ import com.example.booklog.common.ErrorCode;
 class BookQueryTests {
 
 	// TC-02-1
+	// B-2
 	@ParameterizedTest
 	@ValueSource(strings = { "978-4-10-101001-4", "9784101010014", " 978 4101010014 ", "978　4101010014" })
 	void 区切りを取り除いて13桁の数字ならISBNとして探す(String raw) {
@@ -27,6 +28,7 @@ class BookQueryTests {
 	}
 
 	// TC-02-1
+	// B-2
 	@Test
 	void 区切りを取り除いて10桁ならISBNとして探し最後のxは大文字にする() {
 		assertThat(BookQuery.parse("4101010013").googleQuery()).isEqualTo("isbn:4101010013");
@@ -35,6 +37,7 @@ class BookQueryTests {
 	}
 
 	// TC-02-1
+	// B-2
 	@ParameterizedTest
 	@ValueSource(strings = { "吾輩は猫", "夏目漱石", "12345", "97841010100145", "410101001Y", "X101010013" })
 	void それ以外は書名か著者名として入れたまま探す(String raw) {

@@ -87,6 +87,7 @@ test('存在しないユーザーの G-8 は M-28', async ({ browser }) => {
 })
 
 // TC-01-13〜TC-01-16
+// A-11〜A-13・N-22
 test('退会：パスワードを確かめて全部消し、ほかのブラウザのログインも切れ、同じ ID で登録できる', async ({ browser }) => {
   const taro = user('pe', 'たろう')
   const hana = user('pf', 'はなこ')

@@ -23,6 +23,7 @@ function renderList(kind: FollowListKind = 'following', username = 'taro_y') {
 
 describe('フォロー中・フォロワーの一覧（G-10）', () => {
   // F-5・F-6
+  // PF-1
   it('見出しとタブを出し、ユーザーの行に表示名・@ユーザー ID・自己紹介の 1 行目・フォローボタンを出す', async () => {
     mockFetch({
       'GET /api/users/taro_y/following': page([

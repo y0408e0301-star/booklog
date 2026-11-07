@@ -51,6 +51,7 @@ class GoogleBooksCatalogTests {
 	}
 
 	// TC-02-4
+	// B-9
 	@Test
 	void 二十四時間以内の結果があればGoogleBooksAPIを呼ばず回数も数えない() {
 		BookSearchPage cached = new BookSearchPage(List.of(), false);

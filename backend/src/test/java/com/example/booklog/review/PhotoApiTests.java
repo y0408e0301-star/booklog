@@ -172,6 +172,7 @@ public class PhotoApiTests {
 	// ---- 編集（PH-4、5 章の 5）----
 
 	// TC-04-5
+	// N-10
 	@Test
 	void 編集で一枚外して一枚足すと外した写真がS3から消え並び順が前の順のまま() {
 		long id = id(create(this.taro, this.book,
@@ -215,6 +216,7 @@ public class PhotoApiTests {
 	// ---- 削除（5 章の 6）----
 
 	// TC-04-6
+	// N-10
 	@Test
 	void レビューを削除すると写真の行とS3のファイルも消える() {
 		long id = id(create(this.taro, this.book, List.of(photo("a.png", png(1)), photo("b.png", png(2)))));
