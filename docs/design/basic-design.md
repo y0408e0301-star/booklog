@@ -201,7 +201,7 @@ Raise timeline と同じく、API は k6、画面は Playwright で測り、要�
 
 | 項目 | 内容 |
 | --- | --- |
-| データの作り方 | ユーザー 1,000 人・本 5,000 冊・レビュー 1 万件などを入れるスクリプト（`npm run perf -- seed`）。本は Google Books API から取らず、作った値を入れる。公開先の DB に入れる方法は開発計画書 2-8 で足す |
+| データの作り方 | ユーザー 1,000 人・本 5,000 冊・レビュー 1 万件などを入れるスクリプト（`npm run perf -- seed`）。本は Google Books API から取らず、作った値を入れる。公開先の DB には、psql の入った Fargate のタスクで入れる（`PERF_DB=aws npm run perf -- seed`。README「性能テスト」） |
 | 書籍検索（N-6）の測り方 | Google Books API の応答を含むため、本物の Google Books API で測る。1 日の上限を使い切らないよう、回数を決めて（20 回など）測る |
 | 合否を決める環境 | 公開先（AWS）。手元・GitHub Actions のランナーの値は参考 |
 
