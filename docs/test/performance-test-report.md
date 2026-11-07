@@ -45,7 +45,7 @@ P95 は、同じ操作を繰り返し測った値を小さい順に並べて 95%
 | 項目 | 内容 |
 | --- | --- |
 | 測った日 | 2026-11-07 |
-| 測った先 | https://d2k9t27msx0k2c.cloudfront.net （検収の後に消す） |
+| 測った先 | https://d2k9t27msx0k2c.cloudfront.net （検収の後に消した） |
 | 測ったコミット | ブランチ feat/53-acceptance の 5a83a8d。アプリのコードは main の f5f324d と同じ |
 | 測った場所 | GitHub Actions のランナー（実行 42373210172。ワークフロー perf.yml） |
 | 公開先の大きさ | ECS Fargate 0.5 vCPU・1GB（ARM64）のタスク 1 つ、RDS db.t4g.micro |
