@@ -33,7 +33,9 @@ docs/
 │   └── operation-manual.md            … 操作マニュアル（アプリを使う人向け）
 ├── test/
 │   ├── test-specification.md          … テスト仕様書（方針・環境ごとの結果・手動の項目）
-│   └── requirement-coverage.md        … 要件 ID とテストの対応表（スクリプトで作る。手で直さない）
+│   ├── requirement-coverage.md        … 要件 ID とテストの対応表（スクリプトで作る。手で直さない）
+│   ├── performance-test-report.md     … 性能テスト報告書
+│   └── acceptance-report.md           … 検収書
 ├── tech-stack.md                      … 技術スタック定義書
 └── development-plan.md                … 開発計画書（作る順番と進み具合）
 ```
@@ -53,6 +55,8 @@ docs/
 | [技術スタック定義書](tech-stack.md) | BL-TECH | 使う言語・フレームワーク・サービス・開発ツールと選んだ理由 | 本書で行う |
 | [テスト仕様書](test/test-specification.md) | BL-TEST | テストの方針、要件 ID・テストの観点とテストの対応、環境ごとの結果、手動で確かめる項目 | 本書で行う |
 | [要件 ID とテストの対応表](test/requirement-coverage.md) | — | 要件 ID・テストの観点ごとに、確かめるテストの一覧。テスト仕様書 2 章のとおりスクリプトで作る | 要らない（コードと同じ） |
+| [性能テスト報告書](test/performance-test-report.md) | BL-TEST-PERF | 公開先で測った性能（N-1〜N-6）の結果と合否 | 本書で行う |
+| [検収書](test/acceptance-report.md) | BL-TEST-ACC | 要件定義書 13.4 の合格の条件ごとの確認と、検収の結果 | 本書で行う（署名） |
 | [操作マニュアル](manual/operation-manual.md) | BL-MAN | アプリを使う人向けの使い方。アカウント、本を探す、レビュー、写真の位置情報の注意、メッセージが出たとき、できないこと | 本書で行う |
 | [開発計画書](development-plan.md) | BL-PLAN | 作る順番（段階と Pull Request の単位）、段階ごとの完了条件、どこまでできたか | 本書で行う |
 

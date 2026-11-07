@@ -2,6 +2,7 @@ import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
+import { accountId, remotePsql } from './aws.ts'
 import type { Result } from './measure.ts'
 import { noisePng } from './png.ts'
 
@@ -15,7 +16,9 @@ const USAGE = `使い方：npm run perf -- <コマンド>
   ui     画面で測る（Playwright。N-1〜N-6、LCP・CLS、JS・CSS の大きさ）
   mixed  k6 で 30 人の負荷をかけながら、画面で N-1〜N-4 を測る
   report perf/results/ の結果を 1 つの表（summary.md）にまとめる
-  all    api → load → ui → mixed → report の順にすべて動かす`
+  all    api → load → ui → mixed → report の順にすべて動かす
+
+公開先（AWS）で測るとき：PERF_DB=aws を付けて seed・clean すると、公開先の DB（RDS）と写真のバケットに入れる・消す`
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 const FRONTEND = fileURLToPath(new URL('../', import.meta.url))
@@ -27,9 +30,11 @@ const PLAYWRIGHT = fileURLToPath(new URL('../node_modules/@playwright/test/cli.j
 // 測る先。公開先で測るときは CloudFront の URL を入れる
 const BASE_URL = process.env.PERF_BASE_URL ?? 'http://localhost:8080'
 const K6_IMAGE = 'grafana/k6:2.2.0'
-const DB = 'booklog_perf'
+// 公開先（AWS）の DB と写真のバケットに入れる・消すか（PERF_DB=aws）。公開先では、API が使う DB にそのまま入れる
+const ON_AWS = process.env.PERF_DB === 'aws'
+const DB = ON_AWS ? 'booklog' : 'booklog_perf'
 // タイムラインの写真を置くバケット（手元は application.properties と同じ既定値）。S3_ENDPOINT があれば S3 以外（MinIO）に置く
-const BUCKET = process.env.S3_BUCKET ?? 'bl-photos-dev-467112307516'
+const BUCKET = process.env.S3_BUCKET ?? (ON_AWS ? `bl-photos-${accountId()}` : 'bl-photos-dev-467112307516')
 // タイムラインに付ける写真（perf/seed.sql）の枚数と大きさ
 const SAMPLE_IMAGES = 100
 const sampleImage = () => noisePng(320, 240)
@@ -38,6 +43,7 @@ const START_API = `jar を perf プロファイルで起動してから、もう
   java -Xmx768m -jar backend/target/backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=perf`
 
 function psql(database: string, args: string[], input?: string): string {
+  if (ON_AWS) return remotePsql(database, args, input)
   return execFileSync('docker', ['compose', 'exec', '-T', 'db', 'psql', '-U', 'booklog', '-d', database,
     '-v', 'ON_ERROR_STOP=1', '-q', ...args], { cwd: ROOT, input, encoding: 'utf8', stdio: ['pipe', 'pipe', 'inherit'] })
 }
@@ -48,15 +54,16 @@ function s3(args: string[]): void {
     '--only-show-errors'], { stdio: 'inherit' })
 }
 
-const dbExists = () => psql('booklog', ['-tAc', `SELECT 1 FROM pg_database WHERE datname = '${DB}'`]).trim() === '1'
+// 公開先の DB は API が使っているものなので、あって表もある
+const dbExists = () => ON_AWS || psql('booklog', ['-tAc', `SELECT 1 FROM pg_database WHERE datname = '${DB}'`]).trim() === '1'
 
 function seed(): void {
-  if (!dbExists()) {
+  if (!ON_AWS && !dbExists()) {
     psql('booklog', ['-c', `CREATE DATABASE ${DB}`])
     console.log(`DB ${DB} を作りました。表は API が起動したときに Flyway が作ります。\n${START_API}`)
     process.exit(1)
   }
-  if (psql(DB, ['-tAc', "SELECT to_regclass('public.users') IS NOT NULL"]).trim() !== 't') {
+  if (!ON_AWS && psql(DB, ['-tAc', "SELECT to_regclass('public.users') IS NOT NULL"]).trim() !== 't') {
     console.log(`DB ${DB} に表がありません。\n${START_API}`)
     process.exit(1)
   }

@@ -182,8 +182,9 @@ Pull Request を作ったときは、GitHub Actions（[.github/workflows/ci.yml]
 - 書籍検索（N-6）は、`PERF_BOOK_SEARCH=1` を付けたときだけ、本物の Google Books API で 20 回測ります。API サーバーに環境変数 `GOOGLE_BOOKS_API_KEY` を渡しておきます
 - 測る回数は `PERF_RUNS`（既定 20）、測る先は `PERF_BASE_URL`（既定 `http://localhost:8080`）で変えられます
 - 手元とランナーの数値は参考です。合否は公開先（AWS）で測った値で決めます（開発計画書 2-8）
+- 公開先で測るとき：公開して（「公開環境」）、`frontend` で `PERF_DB=aws npm run perf -- seed`（PowerShell では `$env:PERF_DB='aws'; npm run perf -- seed`）。RDS には手元からつなげないので、psql の入った Fargate のタスクを 1 回動かして入れます（[frontend/perf/aws.ts](frontend/perf/aws.ts)）。そのあと Actions の「性能テスト」を、測る先に公開先の URL を入れて動かします（N-5・N-6 も測ります）。終わったら `PERF_DB=aws npm run perf -- clean`
 
-GitHub Actions で動かす：Actions の画面で「性能テスト」を選び、「Run workflow」を押します（[.github/workflows/perf.yml](.github/workflows/perf.yml)）。測る先を空にすると、ランナーの中で DB・MinIO（S3 の代わり）・jar を起動して、データを入れてから測ります（N-5 も測ります。N-6 は測りません）。結果は実行の画面に表で出て、成果物 `perf-results` にも残ります。
+GitHub Actions で動かす：Actions の画面で「性能テスト」を選び、「Run workflow」を押します（[.github/workflows/perf.yml](.github/workflows/perf.yml)）。測る先を空にすると、ランナーの中で DB・MinIO（S3 の代わり）・jar を起動して、データを入れてから測ります（N-5 も測ります。N-6 は公開先のときだけ測ります）。結果は実行の画面に表で出て、成果物 `perf-results` にも残ります。
 
 ### 画面も入れた jar
 
@@ -224,7 +225,7 @@ API サーバーのログは、公開用の jar（`java -jar`）では 1 行 1 �
 | `bash deploy/start.sh` | RDS を起動し、ECS のサービスと ALB を作り直す |
 | `bash deploy/stop.sh` | 「止めています」のページにして、ECS のサービスと ALB を消し、RDS を止める |
 
-- 今は環境を作って止めてあります（RDS は止めてから 7 日で自動で起動するので、そのときはもう一度止めます）
+- 検収（2026-11-07）の後に環境を消したので、今は公開していません。また公開するときは、[基本設計書 2.2.1](docs/design/basic-design.md#221-公開環境の手順)の「初めて作るとき」の手順で作り直します（Google Books API の公開用の API キーも作り直します）
 - AWS のリソースは Terraform（`deploy/terraform/`）で作ります。手作業で作るのは、Parameter Store に置く Google Books API の公開用の API キーだけです
 - 公開の URL は CloudFront を作ったときに決まり、止めたり起動したりしても変わりません（`terraform destroy` で消すと変わります）
 - 常に動かすと月 11,500 円ほどかかり予算（月 10,000 円）を超えるため、使う時間だけ動かします。公開は検収のときだけ行い、終わったら環境を消します（要件定義書 P-6）
