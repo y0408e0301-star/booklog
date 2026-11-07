@@ -3,7 +3,7 @@
 #
 # 測る先（base_url）を空にすると、ランナーの中で PostgreSQL・S3 の代わりの MinIO・jar（perf プロファイル）を起動し、
 # データを入れてから測る。ランナーと公開先（Fargate）は速さが違うので、数値は参考にする。
-# 公開先の URL（CloudFront）を入れると、そこを測る。公開先のデータは先に入れておく
+# 公開先の URL（CloudFront）を入れると、そこを測る。公開先のデータは先に入れておく（README「性能テスト」）
 name: 性能テスト
 
 on:
@@ -29,8 +29,9 @@ jobs:
     env:
       PERF_BASE_URL: ${{ inputs.base_url || 'http://localhost:8080' }}
       PERF_RUNS: ${{ inputs.runs || '20' }}
-      # 写真 4 枚の投稿（N-5）も測る。書籍検索（N-6）は本物の Google Books API と API キーが要るので、ここでは測らない
+      # 写真 4 枚の投稿（N-5）も測る。書籍検索（N-6）は本物の Google Books API と API キーが要るので、公開先のときだけ測る
       PERF_UPLOAD: "1"
+      PERF_BOOK_SEARCH: ${{ inputs.base_url != '' && '1' || '' }}
       # ランナーの中で測るときの S3 の代わり（MinIO）。API（S3_*）と aws コマンド（AWS_*）の両方に渡す
       S3_BUCKET: bl-photos-perf
       S3_ENDPOINT: http://localhost:9000
